@@ -13,7 +13,7 @@ align-items:center;
 
 height:100vh;
 
-color:white;
+color:#ff9900;
 
 }
 
@@ -30,7 +30,7 @@ width:320px;
 
 border-top:4px solid #ff7a00;
 
-box-shadow:0 20px 40px black;
+box-shadow:0 20px 40px rgb(255, 102, 0);
 
 }
 
