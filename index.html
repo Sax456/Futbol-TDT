@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>Polla Mundial TDT</title>
+
+<link rel="stylesheet"
+href="style.css">
+
+
+</head>
+
+<body>
+
+<div class="login">
+
+<h1>Polla Mundial TDT ⚽</h1>
+
+<input id="user"
+placeholder="Usuario">
+
+<input id="pass"
+type="password"
+placeholder="Contraseña">
+
+<button onclick="login()">
+
+Entrar
+
+</button>
+
+
+<hr>
+
+
+<button onclick="mostrarRegistro()">
+
+Crear cuenta
+
+</button>
+
+
+<div id="registro"
+style="display:none">
+
+
+<h3>
+
+Registro empleados
+
+</h3>
+
+
+<input id="nombreReal"
+placeholder="Nombre completo">
+
+
+<input id="nuevoUser"
+placeholder="Usuario">
+
+
+<input id="nuevoPass"
+type="password"
+placeholder="Contraseña">
+
+
+<input id="codigo"
+placeholder="Código empresa">
+
+
+<button onclick="registrar()">
+
+Registrarse
+
+</button>
+
+
+</div>
+
+
+<p id="error"></p>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="js/supabase.js"></script>
+
+<script src="js/auth.js">
+
+</script>
+
+</body>
+
+</html>

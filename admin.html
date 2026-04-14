@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Panel Admin TDT</title>
+
+<link rel="stylesheet" href="css/global.css">
+
+<link rel="stylesheet" href="css/components.css">
+
+<link rel="stylesheet" href="css/admin.css">
+
+</head>
+
+<body>
+
+<div class="navbar">
+
+<div class="navLeft">
+
+<img src="img/logo.png" class="logo">
+
+<h2>TDT Mundial</h2>
+
+</div>
+
+<div class="navRight">
+
+<button onclick="volver()" class="btnBack">
+
+← Volver
+
+</button>
+
+<span id="usuario"></span>
+
+<button onclick="logout()" class="btnLogout">
+
+Salir
+
+</button>
+
+</div>
+
+</div>
+
+<div class="adminContainer">
+
+<h1>Panel Admin TDT ⚙️</h1>
+
+<button class="adminBtn">
+
+Ver apuestas
+
+</button>
+
+<button class="adminBtn">
+
+Actualizar resultados
+
+</button>
+
+<button class="adminBtn">
+
+Ranking
+
+</button>
+
+<button 
+
+class="adminBtn habilitar"
+
+onclick="habilitarGrupo('B')"
+
+>
+
+Habilitar Grupo B
+
+</button>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="js/supabase.js"></script>
+
+<script src="js/auth.js"></script>
+
+<script src="js/navbar.js"></script>
+
+<script src="js/admin.js"></script>
+
+
+</body>
+
+</html>
