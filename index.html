@@ -1,97 +1,164 @@
 <!DOCTYPE html>
-
-<html>
-
+<html lang="es">
 <head>
+<meta charset="UTF-8">
+<title>TDT Mundial</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/global.css">
 
-<title>Polla Mundial TDT</title>
+<style>
 
-<link rel="stylesheet"
-href="style.css">
+body, html{
+margin:0;
+padding:0;
+height:100%;
+font-family:Arial, sans-serif;
+overflow:hidden;
+}
 
+
+/* 🎥 VIDEO */
+.video-bg{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+object-fit:cover;
+z-index:-1;
+}
+
+/* 🖤 OVERLAY OSCURO */
+.overlay{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.6);
+}
+
+/* 📦 CONTENIDO */
+.contenido{
+position:relative;
+z-index:2;
+height:90%;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+color:white;
+text-align:center;
+}
+
+/* 🏆 TITULO */
+h1{
+font-family: 'Bebas Neue', sans-serif;
+font-size:120px;
+margin-bottom:10px;
+letter-spacing: 2px;
+}
+
+/* ⚽ SUBTEXTO */
+p{
+font-size:20px;
+margin-bottom:30px;
+}
+
+
+.logo{
+
+width: 150px;
+padding: 0px;
+margin: 0px;
+}
+
+
+/* 🔥 BOTONES */
+.botones{
+display:flex;
+gap:20px;
+}
+
+button{
+padding:15px 30px;
+border:none;
+border-radius:10px;
+font-size:18px;
+cursor:pointer;
+transition:0.3s;
+}
+
+/* LOGIN */
+.btnLogin{
+background:#ff7b00;
+color:black;
+}
+
+.btnLogin:hover{
+background:#ffa600ce;
+}
+
+/* REGISTRO */
+.btnRegistro{
+background:transparent;
+border:2px solid white;
+color:white;
+}
+
+.btnRegistro:hover{
+background:white;
+color:black;
+}
+
+</style>
 
 </head>
 
 <body>
 
-<div class="login">
+<!-- 🎥 VIDEO -->
+<video autoplay muted loop class="video-bg">
+<source src="video/PixVerse_V6_Image_Text_360P_me_puedes_crear_un (1).mp4" type="video/mp4">
+</video>
 
-<h1>Polla Mundial TDT ⚽</h1>
+<!-- 🖤 CAPA OSCURA -->
+<div class="overlay"></div>
 
-<input id="user"
-placeholder="Usuario">
+<!-- 📦 CONTENIDO -->
+<div class="contenido">
 
-<input id="pass"
-type="password"
-placeholder="Contraseña">
+<center><h1>TIERRA DE TODOS</h1></center>
 
-<button onclick="login()">
+<img src="img/LOGO SOLO.png" class="logo">
 
-Entrar
+<p>Vive el mundial como nunca antes. Predice, compite y gana.</p>
 
+<div class="botones">
+
+<button class="btnLogin" onclick="irLogin()">
+Iniciar Sesión
 </button>
 
-
-<hr>
-
-
-<button onclick="mostrarRegistro()">
-
-Crear cuenta
-
-</button>
-
-
-<div id="registro"
-style="display:none">
-
-
-<h3>
-
-Registro empleados
-
-</h3>
-
-
-<input id="nombreReal"
-placeholder="Nombre completo">
-
-
-<input id="nuevoUser"
-placeholder="Usuario">
-
-
-<input id="nuevoPass"
-type="password"
-placeholder="Contraseña">
-
-
-<input id="codigo"
-placeholder="Código empresa">
-
-
-<button onclick="registrar()">
-
+<button class="btnRegistro" onclick="irRegistro()">
 Registrarse
-
 </button>
 
+</div>
 
 </div>
 
+<script>
 
-<p id="error"></p>
+function irLogin(){
+window.location.href = "login.html"
+}
 
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script src="js/supabase.js"></script>
-
-<script src="js/auth.js">
+function irRegistro(){
+window.location.href = "registro.html"
+}
 
 </script>
 
 </body>
-
 </html>
