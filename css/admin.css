@@ -1,54 +1,158 @@
+/* ============================================================
+   admin.css — Estilos panel administrador
+   ============================================================ */
 
-.adminContainer{
-
-padding:40px;
-
-}
-
-
-
-.adminBtn{
-
-display:block;
-
-width:300px;
-
-margin-bottom:15px;
-
-padding:15px;
-
-background:#0f172a;
-
-color:white;
-
-border:none;
-
-border-radius:10px;
-
-cursor:pointer;
-
-font-size:16px;
-
-text-align:left;
-
-border-left:5px solid #ff7a00;
-
-transition:.3s;
-
-}
-
-
-
-.adminBtn:hover{
-
-transform:translateX(5px);
-
-}
-
-
-
-.habilitar{
-
-border-left:5px solid #16a34a;
-
-}
+   .adminContainer {
+    padding: 40px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  
+  .seccion {
+    margin-bottom: 40px;
+  }
+  
+  /* Header de mes */
+  .mesHeader {
+    color: #ff7a00;
+    font-size: 18px;
+    margin: 30px 0 12px 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #1e293b;
+    text-transform: capitalize;
+  }
+  
+  /* Filtro */
+  .filtroBar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  /* Card de partido */
+  .adminCard {
+    background: #0f172a;
+    border-radius: 10px;
+    border-left: 4px solid #334155;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+  
+  .adminCard.pendiente {
+    border-left-color: #f59e0b;
+  }
+  
+  .adminCardTop {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .grupoTag {
+    background: #1e293b;
+    color: #94a3b8;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+  }
+  
+  .fechaTag {
+    color: #64748b;
+    font-size: 13px;
+  }
+  
+  .pendienteTag {
+    background: #78350f;
+    color: #fbbf24;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    margin-left: auto;
+  }
+  
+  .adminCardBody {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .vsLabel {
+    color: #475569;
+    font-weight: bold;
+  }
+  
+  /* Inputs */
+  .inputEquipo {
+    background: #020617;
+    border: 1px solid #334155;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    width: 160px;
+  }
+  
+  .inputFecha {
+    background: #020617;
+    border: 1px solid #334155;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  
+  .inputEquipo:focus,
+  .inputFecha:focus,
+  .inputAdmin:focus {
+    outline: none;
+    border-color: #ff7a00;
+  }
+  
+  /* Botón guardar */
+  .btnGuardar {
+    background: #ff7a00;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 13px;
+    margin-left: auto;
+  }
+  
+  .btnGuardar:hover  { background: #ea580c; }
+  .btnGuardar:disabled { opacity: 0.6; cursor: default; }
+  
+  /* Form nuevo partido */
+  .formNuevo {
+    background: #0f172a;
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 16px;
+    border: 1px solid #1e293b;
+  }
+  
+  .formGrid {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  
+  .inputAdmin {
+    background: #020617;
+    border: 1px solid #334155;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    min-width: 160px;
+  }
+  
+  .formBtns {
+    display: flex;
+    gap: 12px;
+  }
