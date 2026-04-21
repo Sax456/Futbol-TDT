@@ -25,66 +25,87 @@
 
   <center><h1>Panel Administrador</h1></center>
 
-
-  <!-- AGREGAR PARTIDO -->
-  <div class="seccion">
-    <button id="btnMostrarForm" class="btn btn-primary" onclick="mostrarFormNuevo()">
-      ➕ Agregar partido nuevo
+  <!-- TABS DE NAVEGACIÓN -->
+  <div class="tabsNav">
+    <button id="tab-partidos"   class="tabBtn activo" onclick="mostrarSeccion('partidos')">
+      📋 Partidos
     </button>
+    <button id="tab-resultados" class="tabBtn" onclick="mostrarSeccion('resultados')">
+      ⚽ Resultados
+    </button>
+    <button id="tab-ranking"    class="tabBtn" onclick="mostrarSeccion('ranking')">
+      🏆 Ranking
+    </button>
+  </div>
 
-    <div id="formNuevo" style="display:none" class="formNuevo">
-      <h3>Nuevo partido</h3>
-      <div class="formGrid">
-        <select id="nuevoGrupo" class="inputAdmin">
-          <option value="">-- Selecciona grupo --</option>
-          <option value="1">Grupo A</option>
-          <option value="2">Grupo B</option>
-          <option value="3">Grupo C</option>
-          <option value="4">Grupo D</option>
-          <option value="5">Grupo E</option>
-          <option value="6">Grupo F</option>
-          <option value="7">Grupo G</option>
-          <option value="8">Grupo H</option>
-          <option value="9">Grupo I</option>
-          <option value="10">Grupo J</option>
-          <option value="11">Grupo K</option>
-          <option value="12">Grupo L</option>
-        </select>
-        <input id="nuevoE1"    class="inputAdmin" placeholder="Equipo 1" />
-        <input id="nuevoE2"    class="inputAdmin" placeholder="Equipo 2" />
-        <input id="nuevoFecha" class="inputAdmin" type="datetime-local" />
+  <!-- ==================== SECCIÓN PARTIDOS ==================== -->
+  <div id="seccion-partidos" class="seccionPanel">
+
+    <div class="seccion">
+      <button id="btnMostrarForm" class="btn btn-primary" onclick="mostrarFormNuevo()">
+        ➕ Agregar partido nuevo
+      </button>
+
+      <div id="formNuevo" style="display:none" class="formNuevo">
+        <h3>Nuevo partido</h3>
+        <div class="formGrid">
+          <select id="nuevoGrupo" class="inputAdmin">
+            <option value="">-- Selecciona grupo --</option>
+            <option value="1">Grupo A</option><option value="2">Grupo B</option>
+            <option value="3">Grupo C</option><option value="4">Grupo D</option>
+            <option value="5">Grupo E</option><option value="6">Grupo F</option>
+            <option value="7">Grupo G</option><option value="8">Grupo H</option>
+            <option value="9">Grupo I</option><option value="10">Grupo J</option>
+            <option value="11">Grupo K</option><option value="12">Grupo L</option>
+          </select>
+          <input id="nuevoE1"    class="inputAdmin" placeholder="Equipo 1" />
+          <input id="nuevoE2"    class="inputAdmin" placeholder="Equipo 2" />
+          <input id="nuevoFecha" class="inputAdmin" type="datetime-local" />
+        </div>
+        <div class="formBtns">
+          <button class="btn btn-primary" onclick="agregarPartido()">💾 Guardar partido</button>
+          <button class="btnBack" onclick="cancelarNuevo()">Cancelar</button>
+        </div>
       </div>
-      <div class="formBtns">
-        <button class="btn btn-primary" onclick="agregarPartido()">💾 Guardar partido</button>
-        <button class="btnBack" onclick="cancelarNuevo()">Cancelar</button>
-      </div>
+    </div>
+
+    <div class="seccion filtroBar">
+      <label>Filtrar por grupo:</label>
+      <select id="filtroGrupo" onchange="filtrarPartidos()" class="inputAdmin">
+        <option value="">Todos los grupos</option>
+        <option value="1">Grupo A</option><option value="2">Grupo B</option>
+        <option value="3">Grupo C</option><option value="4">Grupo D</option>
+        <option value="5">Grupo E</option><option value="6">Grupo F</option>
+        <option value="7">Grupo G</option><option value="8">Grupo H</option>
+        <option value="9">Grupo I</option><option value="10">Grupo J</option>
+        <option value="11">Grupo K</option><option value="12">Grupo L</option>
+      </select>
+    </div>
+
+    <div class="seccion">
+      <h2>📋 Partidos registrados</h2>
+      <div id="listaPartidos"></div>
     </div>
   </div>
 
-  <!-- FILTRO -->
-  <div class="seccion filtroBar">
-    <label>Filtrar por grupo:</label>
-    <select id="filtroGrupo" onchange="filtrarPartidos()" class="inputAdmin">
-      <option value="">Todos los grupos</option>
-      <option value="1">Grupo A</option>
-      <option value="2">Grupo B</option>
-      <option value="3">Grupo C</option>
-      <option value="4">Grupo D</option>
-      <option value="5">Grupo E</option>
-      <option value="6">Grupo F</option>
-      <option value="7">Grupo G</option>
-      <option value="8">Grupo H</option>
-      <option value="9">Grupo I</option>
-      <option value="10">Grupo J</option>
-      <option value="11">Grupo K</option>
-      <option value="12">Grupo L</option>
-    </select>
+  <!-- ==================== SECCIÓN RESULTADOS ==================== -->
+  <div id="seccion-resultados" class="seccionPanel" style="display:none">
+    <div class="seccion">
+      <h2>⚽ Ingresar resultados</h2>
+      <p class="seccionDesc">Solo aparecen partidos que ya iniciaron. Al guardar se calculan los puntos automáticamente.</p>
+      <div id="listaResultados"></div>
+    </div>
   </div>
 
-  <!-- LISTA DE PARTIDOS -->
-  <div class="seccion">
-    <h2>📋 Partidos registrados</h2>
-    <div id="listaPartidos"></div>
+  <!-- ==================== SECCIÓN RANKING ==================== -->
+  <div id="seccion-ranking" class="seccionPanel" style="display:none">
+    <div class="seccion">
+      <h2>🏆 Ranking de jugadores</h2>
+      <button class="btn btn-primary" onclick="cargarRanking()" style="margin-bottom:20px">
+        🔄 Actualizar ranking
+      </button>
+      <div id="tablaRanking"></div>
+    </div>
   </div>
 
 </div>
@@ -92,6 +113,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js"></script>
 <script src="js/navbar.js"></script>
+<script src="js/calcular_puntos.js"></script>
 <script src="js/admin.js"></script>
 
 </body>
