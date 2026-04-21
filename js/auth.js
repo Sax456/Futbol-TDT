@@ -129,21 +129,12 @@ await db
 
 if(data){
 
-localStorage.setItem(
-"usuario",
-data.nombre
-)
-
-localStorage.setItem(
-"user",
-data.user
-)
-
-localStorage.setItem(
-"rol",
-data.rol
-)
-
+localStorage.setItem("usuario", JSON.stringify({
+  nombre: data.nombre,
+  user: data.user,
+  rol: data.rol
+}))
+localStorage.setItem("rol", data.rol)
 
 if(data.rol=="admin"){
 
