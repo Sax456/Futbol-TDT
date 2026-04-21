@@ -2,7 +2,6 @@
 // admin.js — Panel administrador TDT Mundial
 // ============================================================
 
-// Verificar que sea admin
 const rolGuardado = localStorage.getItem("rol");
 if (rolGuardado !== "admin") {
   alert("Acceso denegado");
@@ -10,16 +9,25 @@ if (rolGuardado !== "admin") {
 }
 
 let partidosCache = [];
+let vistaActual = "partidos"; // "partidos" | "resultados" | "ranking"
 
 // ============================================================
-// INICIALIZAR
+// NAVEGACIÓN ENTRE SECCIONES
 // ============================================================
-async function iniciarAdmin() {
-  await cargarPartidosAdmin();
+function mostrarSeccion(seccion) {
+  vistaActual = seccion;
+  document.querySelectorAll(".seccionPanel").forEach(s => s.style.display = "none");
+  document.querySelectorAll(".tabBtn").forEach(b => b.classList.remove("activo"));
+  document.getElementById("seccion-" + seccion).style.display = "block";
+  document.getElementById("tab-" + seccion).classList.add("activo");
+
+  if (seccion === "resultados") cargarPartidosResultados();
+  if (seccion === "ranking")    cargarRanking();
+  if (seccion === "partidos")   cargarPartidosAdmin();
 }
 
 // ============================================================
-// CARGAR Y RENDERIZAR PARTIDOS
+// SECCIÓN: PARTIDOS
 // ============================================================
 async function cargarPartidosAdmin() {
   const contenedor = document.getElementById("listaPartidos");
@@ -52,7 +60,6 @@ function renderizarPartidos(partidos) {
     return;
   }
 
-  // Agrupar por mes para mostrar secciones
   const porMes = {};
   for (const p of filtrados) {
     const mes = p.fecha
@@ -82,28 +89,12 @@ function renderizarPartidos(partidos) {
             ${esPorDefinir ? '<span class="pendienteTag">⚠ Por definir</span>' : ""}
           </div>
           <div class="adminCardBody">
-            <input
-              class="inputEquipo"
-              id="e1-${p.id}"
-              value="${p.equipo1}"
-              placeholder="Equipo 1"
-            />
+            <input class="inputEquipo" id="e1-${p.id}" value="${p.equipo1}" placeholder="Equipo 1" />
             <span class="vsLabel">vs</span>
-            <input
-              class="inputEquipo"
-              id="e2-${p.id}"
-              value="${p.equipo2}"
-              placeholder="Equipo 2"
-            />
-            <input
-              class="inputFecha"
-              type="datetime-local"
-              id="f-${p.id}"
-              value="${p.fecha ? toDatetimeLocal(p.fecha) : ""}"
-            />
-            <button class="btnGuardar" onclick="guardarPartido(${p.id})">
-              💾 Guardar
-            </button>
+            <input class="inputEquipo" id="e2-${p.id}" value="${p.equipo2}" placeholder="Equipo 2" />
+            <input class="inputFecha" type="datetime-local" id="f-${p.id}"
+              value="${p.fecha ? toDatetimeLocal(p.fecha) : ""}" />
+            <button class="btnGuardar" onclick="guardarPartido(${p.id})">💾 Guardar</button>
           </div>
         </div>
       `;
@@ -113,18 +104,12 @@ function renderizarPartidos(partidos) {
   contenedor.innerHTML = html;
 }
 
-// ============================================================
-// GUARDAR CAMBIOS EN PARTIDO
-// ============================================================
 async function guardarPartido(id) {
-  const equipo1 = document.getElementById(`e1-${id}`).value.trim();
-  const equipo2 = document.getElementById(`e2-${id}`).value.trim();
+  const equipo1    = document.getElementById(`e1-${id}`).value.trim();
+  const equipo2    = document.getElementById(`e2-${id}`).value.trim();
   const fechaInput = document.getElementById(`f-${id}`).value;
 
-  if (!equipo1 || !equipo2) {
-    alert("Los nombres de equipos no pueden estar vacíos");
-    return;
-  }
+  if (!equipo1 || !equipo2) { alert("Los nombres no pueden estar vacíos"); return; }
 
   const btn = document.querySelector(`button[onclick="guardarPartido(${id})"]`);
   btn.disabled = true;
@@ -133,10 +118,7 @@ async function guardarPartido(id) {
   const updates = { equipo1, equipo2 };
   if (fechaInput) updates.fecha = new Date(fechaInput).toISOString();
 
-  const { error } = await db
-    .from("partidos")
-    .update(updates)
-    .eq("id", id);
+  const { error } = await db.from("partidos").update(updates).eq("id", id);
 
   if (error) {
     alert("Error: " + error.message);
@@ -146,12 +128,8 @@ async function guardarPartido(id) {
   }
 
   btn.textContent = "✅ Guardado";
-  setTimeout(() => {
-    btn.disabled = false;
-    btn.textContent = "💾 Guardar";
-  }, 2000);
+  setTimeout(() => { btn.disabled = false; btn.textContent = "💾 Guardar"; }, 2000);
 
-  // Actualizar cache local
   const idx = partidosCache.findIndex(p => p.id === id);
   if (idx !== -1) {
     partidosCache[idx].equipo1 = equipo1;
@@ -160,9 +138,6 @@ async function guardarPartido(id) {
   }
 }
 
-// ============================================================
-// AGREGAR PARTIDO NUEVO
-// ============================================================
 function mostrarFormNuevo() {
   document.getElementById("formNuevo").style.display = "block";
   document.getElementById("btnMostrarForm").style.display = "none";
@@ -174,29 +149,18 @@ async function agregarPartido() {
   const equipo2  = document.getElementById("nuevoE2").value.trim();
   const fechaVal = document.getElementById("nuevoFecha").value;
 
-  if (!grupoId || !equipo1 || !equipo2) {
-    alert("Completa grupo y ambos equipos");
-    return;
-  }
+  if (!grupoId || !equipo1 || !equipo2) { alert("Completa grupo y ambos equipos"); return; }
 
-  const nuevoPartido = {
-    grupo_id: parseInt(grupoId),
-    equipo1,
-    equipo2,
+  const { error } = await db.from("partidos").insert([{
+    grupo_id: parseInt(grupoId), equipo1, equipo2,
     fecha: fechaVal ? new Date(fechaVal).toISOString() : null
-  };
+  }]);
 
-  const { error } = await db.from("partidos").insert([nuevoPartido]);
-
-  if (error) {
-    alert("Error: " + error.message);
-    return;
-  }
+  if (error) { alert("Error: " + error.message); return; }
 
   alert("✅ Partido agregado");
   document.getElementById("formNuevo").style.display = "none";
   document.getElementById("btnMostrarForm").style.display = "inline-block";
-  // Limpiar form
   ["nuevoGrupo","nuevoE1","nuevoE2","nuevoFecha"].forEach(id => {
     document.getElementById(id).value = "";
   });
@@ -208,22 +172,228 @@ function cancelarNuevo() {
   document.getElementById("btnMostrarForm").style.display = "inline-block";
 }
 
-// ============================================================
-// FILTRO POR GRUPO
-// ============================================================
 function filtrarPartidos() {
   renderizarPartidos(partidosCache);
+}
+
+// ============================================================
+// SECCIÓN: RESULTADOS
+// ============================================================
+async function cargarPartidosResultados() {
+  const contenedor = document.getElementById("listaResultados");
+  contenedor.innerHTML = "<p>Cargando...</p>";
+
+  // Traer partidos que ya iniciaron
+  const ahora = new Date().toISOString();
+  const { data: partidos, error } = await db
+    .from("partidos")
+    .select("*, grupos(nombre)")
+    .lte("fecha", ahora)
+    .order("fecha", { ascending: false });
+
+  if (error || !partidos) {
+    contenedor.innerHTML = "<p>Error cargando partidos</p>";
+    return;
+  }
+
+  // Traer resultados ya ingresados
+  const { data: resultados } = await db
+    .from("resultados")
+    .select("*");
+
+  const resultadosMap = {};
+  (resultados || []).forEach(r => { resultadosMap[r.partido_id] = r; });
+
+  if (partidos.length === 0) {
+    contenedor.innerHTML = "<p>Aún no hay partidos finalizados.</p>";
+    return;
+  }
+
+  let html = "";
+  for (const p of partidos) {
+    const r = resultadosMap[p.id];
+    const yaIngresado = !!r;
+
+    html += `
+      <div class="adminCard ${yaIngresado ? "yaIngresado" : "sinResultado"}">
+        <div class="adminCardTop">
+          <span class="grupoTag">${p.grupos?.nombre || "Grupo ?"}</span>
+          <span class="fechaTag">
+            ${new Date(p.fecha).toLocaleString("es-CO", {
+              day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+            })}
+          </span>
+          ${yaIngresado
+            ? `<span class="tagListo">✅ Resultado ingresado</span>`
+            : `<span class="tagPendiente">⏳ Sin resultado</span>`}
+        </div>
+        <div class="equiposResultado">
+          <span class="equipoLabel">${p.equipo1}</span>
+          <span class="vsLabel">vs</span>
+          <span class="equipoLabel">${p.equipo2}</span>
+        </div>
+        <div class="resultadoForm">
+          <div class="resultadoFila">
+            <label>Goles ${p.equipo1}</label>
+            <input type="number" min="0" max="20" class="inputStat"
+              id="rg1-${p.id}" value="${r ? r.goles1 : ""}" placeholder="0" />
+            <label>Goles ${p.equipo2}</label>
+            <input type="number" min="0" max="20" class="inputStat"
+              id="rg2-${p.id}" value="${r ? r.goles2 : ""}" placeholder="0" />
+          </div>
+          <div class="resultadoFila">
+            <label>🟨 Amarillas</label>
+            <input type="number" min="0" max="20" class="inputStat"
+              id="ram-${p.id}" value="${r ? r.amarillas : ""}" placeholder="0" />
+            <label>🟥 Rojas</label>
+            <input type="number" min="0" max="20" class="inputStat"
+              id="rro-${p.id}" value="${r ? r.rojas : ""}" placeholder="0" />
+            <label>🚩 Corners</label>
+            <input type="number" min="0" max="20" class="inputStat"
+              id="rco-${p.id}" value="${r ? r.corners : ""}" placeholder="0" />
+          </div>
+          <button class="btnGuardar" onclick="guardarResultado(${p.id}, '${p.equipo1}', '${p.equipo2}')">
+            ${yaIngresado ? "🔄 Actualizar resultado" : "💾 Guardar resultado"}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  contenedor.innerHTML = html;
+}
+
+async function guardarResultado(partidoId, equipo1, equipo2) {
+  const goles1    = document.getElementById(`rg1-${partidoId}`).value;
+  const goles2    = document.getElementById(`rg2-${partidoId}`).value;
+  const amarillas = document.getElementById(`ram-${partidoId}`).value;
+  const rojas     = document.getElementById(`rro-${partidoId}`).value;
+  const corners   = document.getElementById(`rco-${partidoId}`).value;
+
+  if (goles1 === "" || goles2 === "") {
+    alert("Ingresa al menos los goles de ambos equipos");
+    return;
+  }
+
+  const btn = document.querySelector(`button[onclick="guardarResultado(${partidoId}, '${equipo1}', '${equipo2}')"]`);
+  btn.disabled = true;
+  btn.textContent = "Guardando...";
+
+  const resultado = {
+    partido_id: partidoId,
+    goles1    : parseInt(goles1),
+    goles2    : parseInt(goles2),
+    amarillas : parseInt(amarillas || 0),
+    rojas     : parseInt(rojas     || 0),
+    corners   : parseInt(corners   || 0)
+  };
+
+  // Upsert resultado
+  const { error } = await db
+    .from("resultados")
+    .upsert(resultado, { onConflict: "partido_id" });
+
+  if (error) {
+    alert("Error: " + error.message);
+    btn.disabled = false;
+    btn.textContent = "💾 Guardar resultado";
+    return;
+  }
+
+  // Calcular puntos de todos los usuarios que apostaron
+  await calcularPuntosPartido(partidoId, { ...resultado, equipo1, equipo2 });
+
+  btn.textContent = "✅ Guardado y puntos calculados";
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = "🔄 Actualizar resultado";
+    cargarPartidosResultados();
+  }, 2000);
+}
+
+// ============================================================
+// SECCIÓN: RANKING
+// ============================================================
+async function cargarRanking() {
+  const contenedor = document.getElementById("tablaRanking");
+  contenedor.innerHTML = "<p>Cargando ranking...</p>";
+
+  // Sumar puntos por usuario
+  const { data, error } = await db
+    .from("apuestas")
+    .select("usuario_id, puntos_ganados")
+    .eq("estado", "ganada");
+
+  if (error) {
+    contenedor.innerHTML = "<p>Error cargando ranking</p>";
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    contenedor.innerHTML = "<p>Aún no hay puntos registrados.</p>";
+    return;
+  }
+
+  // Agrupar puntos por usuario
+  const puntosMap = {};
+  data.forEach(a => {
+    if (!puntosMap[a.usuario_id]) puntosMap[a.usuario_id] = 0;
+    puntosMap[a.usuario_id] += a.puntos_ganados;
+  });
+
+  // Obtener nombres de usuarios
+  const usuarioIds = Object.keys(puntosMap);
+  const { data: usuarios } = await db
+    .from("usuarios")
+    .select("user, nombre")
+    .in("user", usuarioIds);
+
+  const nombresMap = {};
+  (usuarios || []).forEach(u => { nombresMap[u.user] = u.nombre; });
+
+  // Ordenar por puntos
+  const ranking = Object.entries(puntosMap)
+    .map(([userId, pts]) => ({ userId, nombre: nombresMap[userId] || userId, pts }))
+    .sort((a, b) => b.pts - a.pts);
+
+  const medallas = ["🥇", "🥈", "🥉"];
+
+  let html = `
+    <table class="rankingTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Jugador</th>
+          <th>Puntos</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  ranking.forEach((r, i) => {
+    const medalla = medallas[i] || `${i + 1}`;
+    const esTop = i < 3 ? "top3" : "";
+    html += `
+      <tr class="${esTop}">
+        <td class="posicion">${medalla}</td>
+        <td class="nombreJugador">${r.nombre}</td>
+        <td class="puntosJugador">${r.pts} pts</td>
+      </tr>
+    `;
+  });
+
+  html += `</tbody></table>`;
+  contenedor.innerHTML = html;
 }
 
 // ============================================================
 // HELPERS
 // ============================================================
 function toDatetimeLocal(isoString) {
-  // Convierte ISO a formato que acepta datetime-local input
   const d = new Date(isoString);
   const pad = n => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 // Arrancar
-iniciarAdmin();
+mostrarSeccion("partidos");
