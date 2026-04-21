@@ -1,13 +1,13 @@
-let usuario =
-localStorage.getItem("usuario")
+let usuarioRaw = localStorage.getItem("usuario")
+let usuario = null
+try {
+  usuario = usuarioRaw ? JSON.parse(usuarioRaw) : null
+} catch(e) {
+  usuario = { nombre: usuarioRaw }
+}
 
 if(usuario){
-
-document.getElementById(
-"usuario"
-).innerText =
-usuario
-
+  document.getElementById("usuario").innerText = usuario.nombre
 }
 
 
