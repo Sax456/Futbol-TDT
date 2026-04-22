@@ -2,7 +2,19 @@
    admin.css — Estilos panel administrador
    ============================================================ */
 
-.adminContainer {
+@font-face {
+  font-family: 'AkaPosse';
+  src: url('../font/AkaPosse.ttf') format('truetype');
+}
+
+.titulos{
+padding:20px;
+color:white;
+font-family: 'AkaPosse';
+font-size:100px;
+}
+
+   .adminContainer {
   padding: 40px;
   max-width: 1000px;
   margin: 0 auto;
