@@ -1,70 +1,23 @@
-
-.contenedorGrupos{
-
-padding:60px;
-
+@font-face {
+  font-family: 'AkaPosse';
+  src: url('../font/AkaPosse.ttf') format('truetype');
 }
+
 
 body{
 background: radial-gradient(circle at top, #22273d, #000000);
 
-font-family:'Bebas Neue', sans-serif;
+font-family: 'Montserrat', sans-serif;
 
 letter-spacing: 2px;
-}
-
-
-
-.grupoCard{
-
-margin-bottom:20px;
-
-border-left:5px solid #243ab8;
-
-transition:.3s;
-
-}
-
-
-
-.grupoCard:hover{
-
-transform:scale(1.02);
-
-}
-
-
-
-.estado{
-
-padding:5px 10px;
-
-border-radius:20px;
-
-font-size:13px;
-
-}
-
-
-
-.abierto{
-
-background:#16a34a;
-
-}
-
-
-
-.bloqueado{
-
-background:#64748b;
-
 }
 
 /* 🌍 CONTENEDOR */
 .contenedorGrupos{
 padding:60px;
 color:white;
+font-family: 'Montserrat', sans-serif;
+font-weight: 400; /* texto normal */
 }
 
 /* 🧱 GRID AUTOMÁTICO */
@@ -77,11 +30,11 @@ gap:25px;
 /* 🧊 CARD MEJORADA */
 .grupoCard{
 margin-bottom:20px;
-border-left:5px solid #ff5100;
+border-left:5px solid #ffffff;
 transition:.3s;
 padding:20px;
 border-radius:15px;
-background: linear-gradient(145deg, #000000, #1e293b);
+background: linear-gradient(145deg, #ff7b00, #ff7b00);
 box-shadow: 0 10px 25px rgba(0,0,0,0.4);
 text-align:center;
 }
@@ -109,7 +62,7 @@ margin-bottom:15px;
 padding:10px 20px;
 border:none;
 border-radius:10px;
-background:#ff7b00;
+background:#000000;
 color:black;
 font-weight:bold;
 cursor:pointer;
@@ -117,6 +70,6 @@ transition:0.3s;
 }
 
 .grupoBtn:hover{
-background:#ff4800;
+background:#24110a;
 transform:scale(1.05);
 }
