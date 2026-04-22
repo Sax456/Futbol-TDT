@@ -1,9 +1,13 @@
 
 body{
 
-background-image: url('IMG/DISEÑO\ WALLPAPER\ COMPUTADORES\ TDT\ JPG_Mesa\ de\ trabajo\ 1.jpg');
+background-image: url('IMG/BANNER\ FONDO\ TDT\ JPG.jpg.jpeg');
+background-size: cover;
+background-position: center;
+background-repeat: no-repeat;
+background-color: black; /* relleno si sobra espacio */
 
-font-family:Segoe UI;
+font-family: 'Bebas Neue', sans-serif;
 
 display:flex;
 
@@ -34,6 +38,12 @@ box-shadow:0 20px 40px rgb(255, 102, 0);
 
 }
 
+h1{
+font-family: 'Bebas Neue'sans-serif;
+font-size:40px;
+margin-bottom:10px;
+letter-spacing: 2px;
+}
 
 hr{
 
