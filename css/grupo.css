@@ -1,10 +1,17 @@
 
-.grupoContainer{
+.titulo{
 
-padding:40px;
+padding:0px;
+margin: 40px;
 
 }
 
+.contenedor_partidos{
+
+padding:s0px;
+margin: 40px;
+
+}
 
 
 .partidoCard{
@@ -35,7 +42,7 @@ align-items:center;
 
 font-size:18px;
 
-margin-bottom:15px;
+margin-bottom:100px;
 
 }
 
