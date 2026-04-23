@@ -3,25 +3,15 @@
 // ============================================================
 
 const PUNTOS_POR_STAT = {
-  ganador  : 2,
-  empate   : 1,
+  resultado: 2,  // ganador o empate
   marcador : 3,
   amarillas: 3,
   rojas    : 4,
   corners  : 2
 };
 
-const LABELS_STAT = {
-  ganador  : "⚽ Equipo ganador",
-  empate   : "🤝 Empate",
-  marcador : "🎯 Marcador exacto",
-  amarillas: "🟨 Tarjetas amarillas",
-  rojas    : "🟥 Tarjetas rojas",
-  corners  : "🚩 Tiros de esquina"
-};
-
 // ============================================================
-// RENDERIZAR FORMULARIO DE APUESTA EN UN PARTIDO
+// RENDERIZAR FORMULARIO DE APUESTA
 // ============================================================
 function renderFormApuesta(partido, apuestaExistente, detalleExistente) {
   const bloqueado = new Date(partido.fecha) <= new Date();
@@ -38,14 +28,22 @@ function renderFormApuesta(partido, apuestaExistente, detalleExistente) {
     return `<div class="apuestaBloqueada">⏱ Partido iniciado — apuestas cerradas</div>`;
   }
 
-  // Construir stats apostados actuales para pre-llenar
+  // Pre-cargar valores existentes
   const statsActuales = {};
   if (detalleExistente) {
     detalleExistente.forEach(d => { statsActuales[d.tipo_stat] = d.valor_apostado; });
   }
 
-  const statsSeleccionados = Object.keys(statsActuales);
-  const hayApuesta = apuestaExistente != null;
+  const resultadoActual = statsActuales["resultado"] || ""; // "equipo1" | "empate" | "equipo2"
+  const marcadorActual  = statsActuales["marcador"]  || "";
+  const [mg1, mg2] = marcadorActual ? marcadorActual.split("-") : ["", ""];
+
+  const chkMarcador  = !!statsActuales["marcador"];
+  const chkAmarillas = !!statsActuales["amarillas"];
+  const chkRojas     = !!statsActuales["rojas"];
+  const chkCorners   = !!statsActuales["corners"];
+
+  const hayApuesta = !!apuestaExistente;
 
   return `
     <div class="apuestaForm" id="apuestaForm-${partido.id}">
@@ -54,23 +52,117 @@ function renderFormApuesta(partido, apuestaExistente, detalleExistente) {
         <span class="apuestaInfo">Falla uno → pierdes todo</span>
       </div>
 
-      <div class="statsGrid">
-        ${renderStatCheck("ganador",   partido, statsActuales)}
-        ${renderStatCheck("empate",    partido, statsActuales)}
-        ${renderStatCheck("marcador",  partido, statsActuales)}
-        ${renderStatCheck("amarillas", partido, statsActuales)}
-        ${renderStatCheck("rojas",     partido, statsActuales)}
-        ${renderStatCheck("corners",   partido, statsActuales)}
+      <!-- RESULTADO: radio buttons -->
+      <div class="statRow">
+        <div class="statCheckLabel">
+          <span class="statNombre">⚽ Resultado del partido</span>
+          <span class="statPts">+2 pts</span>
+        </div>
+        <div class="resultadoOpciones">
+          <label class="radioOpcion ${resultadoActual === "equipo1" ? "seleccionada" : ""}">
+            <input type="radio" name="resultado-${partido.id}" value="equipo1"
+              ${resultadoActual === "equipo1" ? "checked" : ""}
+              onchange="onResultadoChange(${partido.id})" />
+            ${partido.equipo1}
+          </label>
+          <label class="radioOpcion ${resultadoActual === "empate" ? "seleccionada" : ""}">
+            <input type="radio" name="resultado-${partido.id}" value="empate"
+              ${resultadoActual === "empate" ? "checked" : ""}
+              onchange="onResultadoChange(${partido.id})" />
+            Empate
+          </label>
+          <label class="radioOpcion ${resultadoActual === "equipo2" ? "seleccionada" : ""}">
+            <input type="radio" name="resultado-${partido.id}" value="equipo2"
+              ${resultadoActual === "equipo2" ? "checked" : ""}
+              onchange="onResultadoChange(${partido.id})" />
+            ${partido.equipo2}
+          </label>
+        </div>
+      </div>
+
+      <!-- MARCADOR EXACTO -->
+      <div class="statRow" id="rowMarcador-${partido.id}"
+        style="${resultadoActual === "empate" ? "opacity:0.4;pointer-events:none;" : ""}">
+        <label class="statCheckLabel">
+          <input type="checkbox" id="chk-marcador-${partido.id}"
+            ${chkMarcador ? "checked" : ""}
+            ${resultadoActual === "empate" ? "disabled" : ""}
+            onchange="toggleStat('marcador', ${partido.id})" />
+          <span class="statNombre">🎯 Marcador exacto</span>
+          <span class="statPts">+3 pts</span>
+        </label>
+        <div class="statInputArea" id="area-marcador-${partido.id}"
+          style="display:${chkMarcador ? "flex" : "none"}">
+          <div class="marcadorInput">
+            <input type="number" min="0" max="20" class="statInput mini"
+              id="stat-marcador-${partido.id}-g1" value="${mg1}" placeholder="0"
+              onchange="validarMarcador(${partido.id})" />
+            <span>-</span>
+            <input type="number" min="0" max="20" class="statInput mini"
+              id="stat-marcador-${partido.id}-g2" value="${mg2}" placeholder="0"
+              onchange="validarMarcador(${partido.id})" />
+          </div>
+          <span class="marcadorError" id="errorMarcador-${partido.id}"></span>
+        </div>
+      </div>
+
+      <!-- AMARILLAS -->
+      <div class="statRow">
+        <label class="statCheckLabel">
+          <input type="checkbox" id="chk-amarillas-${partido.id}"
+            ${chkAmarillas ? "checked" : ""}
+            onchange="toggleStat('amarillas', ${partido.id})" />
+          <span class="statNombre">🟨 Tarjetas amarillas</span>
+          <span class="statPts">+3 pts</span>
+        </label>
+        <div class="statInputArea" id="area-amarillas-${partido.id}"
+          style="display:${chkAmarillas ? "flex" : "none"}">
+          <input type="number" min="0" max="30" class="statInput"
+            id="stat-amarillas-${partido.id}"
+            value="${statsActuales["amarillas"] || ""}" placeholder="Cantidad" />
+        </div>
+      </div>
+
+      <!-- ROJAS -->
+      <div class="statRow">
+        <label class="statCheckLabel">
+          <input type="checkbox" id="chk-rojas-${partido.id}"
+            ${chkRojas ? "checked" : ""}
+            onchange="toggleStat('rojas', ${partido.id})" />
+          <span class="statNombre">🟥 Tarjetas rojas</span>
+          <span class="statPts">+4 pts</span>
+        </label>
+        <div class="statInputArea" id="area-rojas-${partido.id}"
+          style="display:${chkRojas ? "flex" : "none"}">
+          <input type="number" min="0" max="10" class="statInput"
+            id="stat-rojas-${partido.id}"
+            value="${statsActuales["rojas"] || ""}" placeholder="Cantidad" />
+        </div>
+      </div>
+
+      <!-- CORNERS -->
+      <div class="statRow">
+        <label class="statCheckLabel">
+          <input type="checkbox" id="chk-corners-${partido.id}"
+            ${chkCorners ? "checked" : ""}
+            onchange="toggleStat('corners', ${partido.id})" />
+          <span class="statNombre">🚩 Tiros de esquina</span>
+          <span class="statPts">+2 pts</span>
+        </label>
+        <div class="statInputArea" id="area-corners-${partido.id}"
+          style="display:${chkCorners ? "flex" : "none"}">
+          <input type="number" min="0" max="30" class="statInput"
+            id="stat-corners-${partido.id}"
+            value="${statsActuales["corners"] || ""}" placeholder="Cantidad" />
+        </div>
       </div>
 
       <div class="apuestaFooter">
         <div class="puntosPreview" id="preview-${partido.id}">
-          ${calcularPuntosPreview(statsSeleccionados)} pts posibles
+          ${calcularPuntosPreview(partido.id)} pts posibles
         </div>
-        <button
-          class="btnApostar"
-          onclick="guardarApuestaCompleta(${partido.id}, '${partido.equipo1}', '${partido.equipo2}')"
-        >
+        <button class="btnApostar"
+          onclick="guardarApuestaCompleta(${partido.id}, '${partido.equipo1}', '${partido.equipo2}')">
           ${hayApuesta ? "✏️ Actualizar apuesta" : "💾 Guardar apuesta"}
         </button>
       </div>
@@ -78,88 +170,65 @@ function renderFormApuesta(partido, apuestaExistente, detalleExistente) {
   `;
 }
 
-function renderStatCheck(tipo, partido, statsActuales) {
-  const checked = statsActuales[tipo] !== undefined ? "checked" : "";
-  const pts = PUNTOS_POR_STAT[tipo];
-  const label = LABELS_STAT[tipo];
-  const inputId = `stat-${tipo}-${partido.id}`;
-  const checkId = `chk-${tipo}-${partido.id}`;
+// ============================================================
+// CUANDO CAMBIA EL RESULTADO (radio)
+// ============================================================
+function onResultadoChange(partidoId) {
+  const resultado = document.querySelector(`input[name="resultado-${partidoId}"]:checked`)?.value;
 
-  let inputHtml = "";
+  const rowMarcador  = document.getElementById(`rowMarcador-${partidoId}`);
+  const chkMarcador  = document.getElementById(`chk-marcador-${partidoId}`);
+  const areaMarcador = document.getElementById(`area-marcador-${partidoId}`);
 
-  if (tipo === "ganador") {
-    const val = statsActuales[tipo] || "";
-    inputHtml = `
-      <select class="statInput" id="${inputId}" onchange="actualizarPreview(${partido.id})">
-        <option value="">-- Selecciona --</option>
-        <option value="${partido.equipo1}" ${val === partido.equipo1 ? "selected" : ""}>${partido.equipo1}</option>
-        <option value="${partido.equipo2}" ${val === partido.equipo2 ? "selected" : ""}>${partido.equipo2}</option>
-      </select>
-    `;
-  } else if (tipo === "empate") {
-    // Empate no necesita input extra
-    inputHtml = `<span class="statFijo">Apuestas a empate</span>`;
-  } else if (tipo === "marcador") {
-    const val = statsActuales[tipo] || "";
-    const [g1, g2] = val ? val.split("-") : ["", ""];
-    inputHtml = `
-      <div class="marcadorInput">
-        <input type="number" min="0" max="20" class="statInput mini" id="${inputId}-g1"
-          value="${g1}" placeholder="0" onchange="actualizarPreview(${partido.id})" />
-        <span>-</span>
-        <input type="number" min="0" max="20" class="statInput mini" id="${inputId}-g2"
-          value="${g2}" placeholder="0" onchange="actualizarPreview(${partido.id})" />
-      </div>
-    `;
+  if (resultado === "empate") {
+    // Bloquear marcador
+    rowMarcador.style.opacity = "0.4";
+    rowMarcador.style.pointerEvents = "none";
+    chkMarcador.checked = false;
+    chkMarcador.disabled = true;
+    areaMarcador.style.display = "none";
   } else {
-    // amarillas, rojas, corners — número
-    inputHtml = `
-      <input type="number" min="0" max="30" class="statInput"
-        id="${inputId}" value="${statsActuales[tipo] || ""}"
-        placeholder="Cantidad" onchange="actualizarPreview(${partido.id})" />
-    `;
+    // Habilitar marcador
+    rowMarcador.style.opacity = "1";
+    rowMarcador.style.pointerEvents = "auto";
+    chkMarcador.disabled = false;
+    // Si marcador estaba abierto, revalidar
+    if (chkMarcador.checked) validarMarcador(partidoId);
   }
 
-  return `
-    <div class="statRow" id="row-${tipo}-${partido.id}">
-      <label class="statCheckLabel">
-        <input type="checkbox" id="${checkId}" ${checked}
-          onchange="toggleStat('${tipo}', ${partido.id})"
-        />
-        <span class="statNombre">${label}</span>
-        <span class="statPts">+${pts} pts</span>
-      </label>
-      <div class="statInputArea" id="area-${tipo}-${partido.id}"
-        style="display:${checked ? "flex" : "none"}">
-        ${inputHtml}
-      </div>
-    </div>
-  `;
-}
+  // Actualizar estilos de radio
+  document.querySelectorAll(`input[name="resultado-${partidoId}"]`).forEach(radio => {
+    radio.closest(".radioOpcion").classList.toggle("seleccionada", radio.checked);
+  });
 
-function renderApuestaRealizada(apuesta, detalle, partido) {
-  const estadoClass = apuesta.estado === "ganada" ? "ganada" : apuesta.estado === "perdida" ? "perdida" : "pendiente";
-  const estadoLabel = apuesta.estado === "ganada" ? "✅ Ganada" : apuesta.estado === "perdida" ? "❌ Perdida" : "⏳ Pendiente";
-
-  let detalleHtml = detalle.map(d => `
-    <div class="detalleItem">
-      <span>${LABELS_STAT[d.tipo_stat]}</span>
-      <span class="detalleValor">${d.valor_apostado}</span>
-    </div>
-  `).join("");
-
-  return `
-    <div class="apuestaRealizada ${estadoClass}">
-      <div class="apuestaEstado">${estadoLabel}
-        ${apuesta.estado === "ganada" ? `<span class="puntosGanados">+${apuesta.puntos_ganados} pts</span>` : ""}
-      </div>
-      <div class="apuestaDetalles">${detalleHtml}</div>
-    </div>
-  `;
+  actualizarPreview(partidoId);
 }
 
 // ============================================================
-// TOGGLE STAT — mostrar/ocultar input al marcar checkbox
+// VALIDAR MARCADOR CONSISTENTE CON RESULTADO
+// ============================================================
+function validarMarcador(partidoId) {
+  const resultado = document.querySelector(`input[name="resultado-${partidoId}"]:checked`)?.value;
+  const g1 = parseInt(document.getElementById(`stat-marcador-${partidoId}-g1`)?.value);
+  const g2 = parseInt(document.getElementById(`stat-marcador-${partidoId}-g2`)?.value);
+  const errorEl = document.getElementById(`errorMarcador-${partidoId}`);
+
+  if (!errorEl || isNaN(g1) || isNaN(g2)) return true;
+
+  let error = "";
+
+  if (resultado === "equipo1" && g1 <= g2) {
+    error = "⚠ El marcador debe mostrar que gana el equipo 1";
+  } else if (resultado === "equipo2" && g2 <= g1) {
+    error = "⚠ El marcador debe mostrar que gana el equipo 2";
+  }
+
+  errorEl.textContent = error;
+  return error === "";
+}
+
+// ============================================================
+// TOGGLE STAT
 // ============================================================
 function toggleStat(tipo, partidoId) {
   const checked = document.getElementById(`chk-${tipo}-${partidoId}`).checked;
@@ -172,63 +241,63 @@ function toggleStat(tipo, partidoId) {
 // PREVIEW DE PUNTOS
 // ============================================================
 function actualizarPreview(partidoId) {
-  const statsSeleccionados = Object.keys(PUNTOS_POR_STAT).filter(tipo =>
-    document.getElementById(`chk-${tipo}-${partidoId}`)?.checked
-  );
-  const pts = calcularPuntosPreview(statsSeleccionados);
   const preview = document.getElementById(`preview-${partidoId}`);
-  if (preview) preview.textContent = `${pts} pts posibles`;
+  if (preview) preview.textContent = `${calcularPuntosPreview(partidoId)} pts posibles`;
 }
 
-function calcularPuntosPreview(statsSeleccionados) {
-  return statsSeleccionados.reduce((sum, tipo) => sum + (PUNTOS_POR_STAT[tipo] || 0), 0);
+function calcularPuntosPreview(partidoId) {
+  let pts = 0;
+  const resultado = document.querySelector(`input[name="resultado-${partidoId}"]:checked`);
+  if (resultado) pts += PUNTOS_POR_STAT["resultado"];
+
+  ["marcador","amarillas","rojas","corners"].forEach(tipo => {
+    const chk = document.getElementById(`chk-${tipo}-${partidoId}`);
+    if (chk?.checked) pts += PUNTOS_POR_STAT[tipo] || 0;
+  });
+
+  return pts;
 }
 
 // ============================================================
-// GUARDAR APUESTA COMPLETA
+// GUARDAR APUESTA
 // ============================================================
 async function guardarApuestaCompleta(partidoId, equipo1, equipo2) {
   const usuario = JSON.parse(localStorage.getItem("usuario"));
   if (!usuario) { alert("Debes iniciar sesión"); return; }
 
-  // Recoger stats seleccionados y sus valores
+  const resultadoRaw = document.querySelector(`input[name="resultado-${partidoId}"]:checked`)?.value;
+  if (!resultadoRaw) { alert("Selecciona el resultado del partido"); return; }
+
   const statsElegidos = [];
 
-  for (const tipo of Object.keys(PUNTOS_POR_STAT)) {
+  // Resultado (ganador o empate)
+  let valorResultado = "";
+  if (resultadoRaw === "empate") {
+    valorResultado = "empate";
+  } else if (resultadoRaw === "equipo1") {
+    valorResultado = equipo1;
+  } else {
+    valorResultado = equipo2;
+  }
+  statsElegidos.push({ tipo_stat: "resultado", valor_apostado: valorResultado });
+
+  // Marcador
+  const chkMarcador = document.getElementById(`chk-marcador-${partidoId}`);
+  if (chkMarcador?.checked) {
+    if (!validarMarcador(partidoId)) { alert("El marcador no es consistente con el resultado"); return; }
+    const g1 = document.getElementById(`stat-marcador-${partidoId}-g1`)?.value;
+    const g2 = document.getElementById(`stat-marcador-${partidoId}-g2`)?.value;
+    if (g1 === "" || g2 === "") { alert("Ingresa el marcador completo"); return; }
+    statsElegidos.push({ tipo_stat: "marcador", valor_apostado: `${g1}-${g2}` });
+  }
+
+  // Amarillas, rojas, corners
+  for (const tipo of ["amarillas","rojas","corners"]) {
     const chk = document.getElementById(`chk-${tipo}-${partidoId}`);
-    if (!chk || !chk.checked) continue;
-
-    let valor = "";
-
-    if (tipo === "ganador") {
-      valor = document.getElementById(`stat-ganador-${partidoId}`)?.value;
-      if (!valor) { alert("Selecciona el equipo ganador"); return; }
-    } else if (tipo === "empate") {
-      valor = "empate";
-    } else if (tipo === "marcador") {
-      const g1 = document.getElementById(`stat-marcador-${partidoId}-g1`)?.value;
-      const g2 = document.getElementById(`stat-marcador-${partidoId}-g2`)?.value;
-      if (g1 === "" || g2 === "") { alert("Ingresa el marcador completo"); return; }
-      valor = `${g1}-${g2}`;
-    } else {
-      valor = document.getElementById(`stat-${tipo}-${partidoId}`)?.value;
-      if (valor === "") { alert(`Ingresa un valor para ${LABELS_STAT[tipo]}`); return; }
-    }
-
-    statsElegidos.push({ tipo_stat: tipo, valor_apostado: valor });
-  }
-
-  if (statsElegidos.length === 0) {
-    alert("Selecciona al menos un stat para apostar");
-    return;
-  }
-
-  // Validar que no mezclen ganador + empate
-  const tieneGanador = statsElegidos.some(s => s.tipo_stat === "ganador");
-  const tieneEmpate  = statsElegidos.some(s => s.tipo_stat === "empate");
-  if (tieneGanador && tieneEmpate) {
-    alert("No puedes apostar a ganador y empate al mismo tiempo");
-    return;
+    if (!chk?.checked) continue;
+    const val = document.getElementById(`stat-${tipo}-${partidoId}`)?.value;
+    if (val === "") { alert(`Ingresa un valor para ${tipo}`); return; }
+    statsElegidos.push({ tipo_stat: tipo, valor_apostado: val });
   }
 
   const btn = document.querySelector(`#apuestaForm-${partidoId} .btnApostar`);
@@ -236,35 +305,24 @@ async function guardarApuestaCompleta(partidoId, equipo1, equipo2) {
   btn.textContent = "Guardando...";
 
   try {
-    // 1. Upsert apuesta principal
     const { data: apuestaData, error: err1 } = await db
       .from("apuestas")
-      .upsert({ usuario_id: usuario.user, partido_id: partidoId, estado: "pendiente", puntos_ganados: 0 },
-               { onConflict: "usuario_id,partido_id" })
+      .upsert(
+        { usuario_id: usuario.user, partido_id: partidoId, estado: "pendiente", puntos_ganados: 0 },
+        { onConflict: "usuario_id,partido_id" }
+      )
       .select()
       .single();
 
     if (err1) throw err1;
 
-    const apuestaId = apuestaData.id;
-
-    // 2. Borrar detalles anteriores y reinsertar
-    const { error: err2 } = await db
-      .from("apuestas_detalle")
-      .delete()
-      .eq("apuesta_id", apuestaId);
-
-    if (err2) throw err2;
-
-    const detalles = statsElegidos.map(s => ({ apuesta_id: apuestaId, ...s }));
+    await db.from("apuestas_detalle").delete().eq("apuesta_id", apuestaData.id);
+    const detalles = statsElegidos.map(s => ({ apuesta_id: apuestaData.id, ...s }));
     const { error: err3 } = await db.from("apuestas_detalle").insert(detalles);
     if (err3) throw err3;
 
     btn.textContent = "✅ Apuesta guardada";
-    setTimeout(() => {
-      btn.disabled = false;
-      btn.textContent = "✏️ Actualizar apuesta";
-    }, 2000);
+    setTimeout(() => { btn.disabled = false; btn.textContent = "✏️ Actualizar apuesta"; }, 2000);
 
   } catch (err) {
     console.error(err);
@@ -275,12 +333,44 @@ async function guardarApuestaCompleta(partidoId, equipo1, equipo2) {
 }
 
 // ============================================================
-// CARGAR APUESTAS EXISTENTES DEL USUARIO PARA UN GRUPO
+// APUESTA YA REALIZADA (partido bloqueado)
+// ============================================================
+function renderApuestaRealizada(apuesta, detalle, partido) {
+  const estadoClass = apuesta.estado === "ganada" ? "ganada" : apuesta.estado === "perdida" ? "perdida" : "pendiente";
+  const estadoLabel = apuesta.estado === "ganada" ? "✅ Ganada" : apuesta.estado === "perdida" ? "❌ Perdida" : "⏳ Pendiente";
+
+  const LABELS = {
+    resultado: "⚽ Resultado",
+    marcador : "🎯 Marcador exacto",
+    amarillas: "🟨 Amarillas",
+    rojas    : "🟥 Rojas",
+    corners  : "🚩 Corners"
+  };
+
+  const detalleHtml = (detalle || []).map(d => `
+    <div class="detalleItem">
+      <span>${LABELS[d.tipo_stat] || d.tipo_stat}</span>
+      <span class="detalleValor">${d.valor_apostado}</span>
+    </div>
+  `).join("");
+
+  return `
+    <div class="apuestaRealizada ${estadoClass}">
+      <div class="apuestaEstado">${estadoLabel}
+        ${apuesta.estado === "ganada"
+          ? `<span class="puntosGanados">+${apuesta.puntos_ganados} pts</span>`
+          : ""}
+      </div>
+      <div class="apuestaDetalles">${detalleHtml}</div>
+    </div>
+  `;
+}
+
+// ============================================================
+// CARGAR APUESTAS EXISTENTES DEL USUARIO
 // ============================================================
 async function cargarApuestasUsuario(usuarioId, partidoIds) {
   if (!usuarioId || partidoIds.length === 0) return { apuestas: {}, detalles: {} };
-
-  const ids = partidoIds.join(",");
 
   const { data: apuestas } = await db
     .from("apuestas")
@@ -291,13 +381,11 @@ async function cargarApuestasUsuario(usuarioId, partidoIds) {
   if (!apuestas || apuestas.length === 0) return { apuestas: {}, detalles: {} };
 
   const apuestaIds = apuestas.map(a => a.id);
-
   const { data: detalles } = await db
     .from("apuestas_detalle")
     .select("*")
     .in("apuesta_id", apuestaIds);
 
-  // Mapas para acceso rápido
   const apuestasMap = {};
   apuestas.forEach(a => { apuestasMap[a.partido_id] = a; });
 
