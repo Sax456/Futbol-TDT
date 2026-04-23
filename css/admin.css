@@ -1,418 +1,298 @@
-// ============================================================
-// admin.js — Panel administrador TDT Mundial
-// ============================================================
+/* ============================================================
+   admin.css — Estilos panel administrador
+   ============================================================ */
 
-const rolGuardado = localStorage.getItem("rol");
-if (rolGuardado !== "admin") {
-  alert("Acceso denegado");
-  window.location = "index.html";
+@font-face {
+  font-family: 'AkaPosse';
+  src: url('../font/AkaPosse.ttf') format('truetype');
 }
 
-let partidosCache = [];
-let vistaActual = "partidos"; // "partidos" | "resultados" | "ranking"
-
-// ============================================================
-// NAVEGACIÓN ENTRE SECCIONES
-// ============================================================
-function mostrarSeccion(seccion) {
-  vistaActual = seccion;
-  document.querySelectorAll(".seccionPanel").forEach(s => s.style.display = "none");
-  document.querySelectorAll(".tabBtn").forEach(b => b.classList.remove("activo"));
-  document.getElementById("seccion-" + seccion).style.display = "block";
-  document.getElementById("tab-" + seccion).classList.add("activo");
-
-  if (seccion === "resultados") cargarPartidosResultados();
-  if (seccion === "ranking")    cargarRanking();
-  if (seccion === "partidos")   cargarPartidosAdmin();
+.titulos{
+padding:20px;
+color:white;
+font-family: 'AkaPosse';
+font-size:100px;
 }
 
-// ============================================================
-// SECCIÓN: PARTIDOS
-// ============================================================
-async function cargarPartidosAdmin() {
-  const contenedor = document.getElementById("listaPartidos");
-  contenedor.innerHTML = "<p>Cargando...</p>";
-
-  const { data: partidos, error } = await db
-    .from("partidos")
-    .select("*, grupos(nombre)")
-    .order("fecha", { ascending: true });
-
-  if (error) {
-    contenedor.innerHTML = `<p style="color:red">Error: ${error.message}</p>`;
-    return;
-  }
-
-  partidosCache = partidos;
-  renderizarPartidos(partidos);
+   .adminContainer {
+  padding: 40px;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
-function renderizarPartidos(partidos) {
-  const contenedor = document.getElementById("listaPartidos");
-  const filtroGrupo = document.getElementById("filtroGrupo").value;
-
-  const filtrados = filtroGrupo
-    ? partidos.filter(p => p.grupo_id == filtroGrupo)
-    : partidos;
-
-  if (filtrados.length === 0) {
-    contenedor.innerHTML = "<p>No hay partidos.</p>";
-    return;
-  }
-
-  const porMes = {};
-  for (const p of filtrados) {
-    const mes = p.fecha
-      ? new Date(p.fecha).toLocaleString("es-CO", { month: "long", year: "numeric" })
-      : "Sin fecha";
-    if (!porMes[mes]) porMes[mes] = [];
-    porMes[mes].push(p);
-  }
-
-  let html = "";
-  for (const [mes, lista] of Object.entries(porMes)) {
-    html += `<h3 class="mesHeader">${mes.charAt(0).toUpperCase() + mes.slice(1)}</h3>`;
-    for (const p of lista) {
-      const esPorDefinir = p.equipo1 === "Por definir" || p.equipo2 === "Por definir";
-      const fechaFormateada = p.fecha
-        ? new Date(p.fecha).toLocaleString("es-CO", {
-            weekday: "short", day: "2-digit", month: "short",
-            hour: "2-digit", minute: "2-digit"
-          })
-        : "Sin fecha";
-
-      html += `
-        <div class="adminCard ${esPorDefinir ? "pendiente" : ""}">
-          <div class="adminCardTop">
-            <span class="grupoTag">${p.grupos?.nombre || "Grupo ?"}</span>
-            <span class="fechaTag">${fechaFormateada}</span>
-            ${esPorDefinir ? '<span class="pendienteTag">⚠ Por definir</span>' : ""}
-          </div>
-          <div class="adminCardBody">
-            <input class="inputEquipo" id="e1-${p.id}" value="${p.equipo1}" placeholder="Equipo 1" />
-            <span class="vsLabel">vs</span>
-            <input class="inputEquipo" id="e2-${p.id}" value="${p.equipo2}" placeholder="Equipo 2" />
-            <input class="inputFecha" type="datetime-local" id="f-${p.id}"
-              value="${p.fecha ? toDatetimeLocal(p.fecha) : ""}" />
-            <button class="btnGuardar" onclick="guardarPartido(${p.id})">💾 Guardar</button>
-            <button class="btnEliminar" onclick="eliminarPartido(${p.id})">🗑 Eliminar</button>
-          </div>
-        </div>
-      `;
-    }
-  }
-
-  contenedor.innerHTML = html;
+.seccion {
+  margin-bottom: 40px;
 }
 
-async function guardarPartido(id) {
-  const equipo1    = document.getElementById(`e1-${id}`).value.trim();
-  const equipo2    = document.getElementById(`e2-${id}`).value.trim();
-  const fechaInput = document.getElementById(`f-${id}`).value;
-
-  if (!equipo1 || !equipo2) { alert("Los nombres no pueden estar vacíos"); return; }
-
-  const btn = document.querySelector(`button[onclick="guardarPartido(${id})"]`);
-  btn.disabled = true;  
-  btn.textContent = "Guardando...";
-
-  const updates = { equipo1, equipo2 };
-  if (fechaInput) updates.fecha = fechaInput + ":00-05:00";
-
-  const { error } = await db.from("partidos").update(updates).eq("id", id);
-
-  if (error) {
-    alert("Error: " + error.message);
-    btn.disabled = false;
-    btn.textContent = "💾 Guardar";
-    return;
-  }
-
-  btn.textContent = "✅ Guardado";
-  setTimeout(() => { btn.disabled = false; btn.textContent = "💾 Guardar"; }, 2000);
-
-  const idx = partidosCache.findIndex(p => p.id === id);
-  if (idx !== -1) {
-    partidosCache[idx].equipo1 = equipo1;
-    partidosCache[idx].equipo2 = equipo2;
-    if (fechaInput) partidosCache[idx].fecha = new Date(fechaInput).toISOString();
-  }
+/* Header de mes */
+.mesHeader {
+  color: #ff7a00;
+  font-size: 18px;
+  margin: 30px 0 12px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #1e293b;
+  text-transform: capitalize;
 }
 
-function mostrarFormNuevo() {
-  document.getElementById("formNuevo").style.display = "block";
-  document.getElementById("btnMostrarForm").style.display = "none";
+/* Filtro */
+.filtroBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-async function agregarPartido() {
-  const grupoId  = document.getElementById("nuevoGrupo").value;
-  const equipo1  = document.getElementById("nuevoE1").value.trim();
-  const equipo2  = document.getElementById("nuevoE2").value.trim();
-  const fechaVal = document.getElementById("nuevoFecha").value;
-
-  if (!grupoId || !equipo1 || !equipo2) { alert("Completa grupo y ambos equipos"); return; }
-
-  const { error } = await db.from("partidos").insert([{
-    grupo_id: parseInt(grupoId), equipo1, equipo2,
-    fecha: fechaVal ? fechaVal + ":00-05:00" : null
-  }]);
-
-  if (error) { alert("Error: " + error.message); return; }
-
-  alert("✅ Partido agregado");
-  document.getElementById("formNuevo").style.display = "none";
-  document.getElementById("btnMostrarForm").style.display = "inline-block";
-  ["nuevoGrupo","nuevoE1","nuevoE2","nuevoFecha"].forEach(id => {
-    document.getElementById(id).value = "";
-  });
-  await cargarPartidosAdmin();
+/* Card de partido */
+.adminCard {
+  background: #0f172a;
+  border-radius: 10px;
+  border-left: 4px solid #334155;
+  padding: 16px 20px;
+  margin-bottom: 12px;
 }
 
-function cancelarNuevo() {
-  document.getElementById("formNuevo").style.display = "none";
-  document.getElementById("btnMostrarForm").style.display = "inline-block";
+.adminCard.pendiente {
+  border-left-color: #f59e0b;
 }
 
-function filtrarPartidos() {
-  renderizarPartidos(partidosCache);
+.adminCardTop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
-// ============================================================
-// SECCIÓN: RESULTADOS
-// ============================================================
-async function cargarPartidosResultados() {
-  const contenedor = document.getElementById("listaResultados");
-  contenedor.innerHTML = "<p>Cargando...</p>";
-
-  // Traer partidos que ya iniciaron
-  const ahora = new Date().toISOString();
-  const { data: partidos, error } = await db
-    .from("partidos")
-    .select("*, grupos(nombre)")
-    .lte("fecha", ahora)
-    .order("fecha", { ascending: false });
-
-  if (error || !partidos) {
-    contenedor.innerHTML = "<p>Error cargando partidos</p>";
-    return;
-  }
-
-  // Traer resultados ya ingresados
-  const { data: resultados } = await db
-    .from("resultados")
-    .select("*");
-
-  const resultadosMap = {};
-  (resultados || []).forEach(r => { resultadosMap[r.partido_id] = r; });
-
-  if (partidos.length === 0) {
-    contenedor.innerHTML = "<p>Aún no hay partidos finalizados.</p>";
-    return;
-  }
-
-  let html = "";
-  for (const p of partidos) {
-    const r = resultadosMap[p.id];
-    const yaIngresado = !!r;
-
-    html += `
-      <div class="adminCard ${yaIngresado ? "yaIngresado" : "sinResultado"}">
-        <div class="adminCardTop">
-          <span class="grupoTag">${p.grupos?.nombre || "Grupo ?"}</span>
-          <span class="fechaTag">
-            ${new Date(p.fecha).toLocaleString("es-CO", {
-              day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
-            })}
-          </span>
-          ${yaIngresado
-            ? `<span class="tagListo">✅ Resultado ingresado</span>`
-            : `<span class="tagPendiente">⏳ Sin resultado</span>`}
-        </div>
-        <div class="equiposResultado">
-          <span class="equipoLabel">${p.equipo1}</span>
-          <span class="vsLabel">vs</span>
-          <span class="equipoLabel">${p.equipo2}</span>
-        </div>
-        <div class="resultadoForm">
-          <div class="resultadoFila">
-            <label>Goles ${p.equipo1}</label>
-            <input type="number" min="0" max="20" class="inputStat"
-              id="rg1-${p.id}" value="${r ? r.goles1 : ""}" placeholder="0" />
-            <label>Goles ${p.equipo2}</label>
-            <input type="number" min="0" max="20" class="inputStat"
-              id="rg2-${p.id}" value="${r ? r.goles2 : ""}" placeholder="0" />
-          </div>
-          <div class="resultadoFila">
-            <label>🟨 Amarillas</label>
-            <input type="number" min="0" max="20" class="inputStat"
-              id="ram-${p.id}" value="${r ? r.amarillas : ""}" placeholder="0" />
-            <label>🟥 Rojas</label>
-            <input type="number" min="0" max="20" class="inputStat"
-              id="rro-${p.id}" value="${r ? r.rojas : ""}" placeholder="0" />
-            <label>🚩 Corners</label>
-            <input type="number" min="0" max="20" class="inputStat"
-              id="rco-${p.id}" value="${r ? r.corners : ""}" placeholder="0" />
-          </div>
-          <button class="btnGuardar" onclick="guardarResultado(${p.id}, '${p.equipo1}', '${p.equipo2}')">
-            ${yaIngresado ? "🔄 Actualizar resultado" : "💾 Guardar resultado"}
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
-  contenedor.innerHTML = html;
+.grupoTag {
+  background: #1e293b;
+  color: #94a3b8;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
 }
 
-async function guardarResultado(partidoId, equipo1, equipo2) {
-  const goles1    = document.getElementById(`rg1-${partidoId}`).value;
-  const goles2    = document.getElementById(`rg2-${partidoId}`).value;
-  const amarillas = document.getElementById(`ram-${partidoId}`).value;
-  const rojas     = document.getElementById(`rro-${partidoId}`).value;
-  const corners   = document.getElementById(`rco-${partidoId}`).value;
-
-  if (goles1 === "" || goles2 === "") {
-    alert("Ingresa al menos los goles de ambos equipos");
-    return;
-  }
-
-  const btn = document.querySelector(`button[onclick="guardarResultado(${partidoId}, '${equipo1}', '${equipo2}')"]`);
-  btn.disabled = true;
-  btn.textContent = "Guardando...";
-
-  const resultado = {
-    partido_id: partidoId,
-    goles1    : parseInt(goles1),
-    goles2    : parseInt(goles2),
-    amarillas : parseInt(amarillas || 0),
-    rojas     : parseInt(rojas     || 0),
-    corners   : parseInt(corners   || 0)
-  };
-
-  // Upsert resultado
-  const { error } = await db
-    .from("resultados")
-    .upsert(resultado, { onConflict: "partido_id" });
-
-  if (error) {
-    alert("Error: " + error.message);
-    btn.disabled = false;
-    btn.textContent = "💾 Guardar resultado";
-    return;
-  }
-
-  // Calcular puntos de todos los usuarios que apostaron
-  await calcularPuntosPartido(partidoId, { ...resultado, equipo1, equipo2 });
-
-  btn.textContent = "✅ Guardado y puntos calculados";
-  setTimeout(() => {
-    btn.disabled = false;
-    btn.textContent = "🔄 Actualizar resultado";
-    cargarPartidosResultados();
-  }, 2000);
+.fechaTag {
+  color: #64748b;
+  font-size: 13px;
 }
 
-// ============================================================
-// SECCIÓN: RANKING
-// ============================================================
-async function cargarRanking() {
-  const contenedor = document.getElementById("tablaRanking");
-  contenedor.innerHTML = "<p>Cargando ranking...</p>";
-
-  // Sumar puntos por usuario
-  const { data, error } = await db
-    .from("apuestas")
-    .select("usuario_id, puntos_ganados")
-    .eq("estado", "ganada");
-
-  if (error) {
-    contenedor.innerHTML = "<p>Error cargando ranking</p>";
-    return;
-  }
-
-  if (!data || data.length === 0) {
-    contenedor.innerHTML = "<p>Aún no hay puntos registrados.</p>";
-    return;
-  }
-
-  // Agrupar puntos por usuario
-  const puntosMap = {};
-  data.forEach(a => {
-    if (!puntosMap[a.usuario_id]) puntosMap[a.usuario_id] = 0;
-    puntosMap[a.usuario_id] += a.puntos_ganados;
-  });
-
-  // Obtener nombres de usuarios
-  const usuarioIds = Object.keys(puntosMap);
-  const { data: usuarios } = await db
-    .from("usuarios")
-    .select("user, nombre")
-    .in("user", usuarioIds);
-
-  const nombresMap = {};
-  (usuarios || []).forEach(u => { nombresMap[u.user] = u.nombre; });
-
-  // Ordenar por puntos
-  const ranking = Object.entries(puntosMap)
-    .map(([userId, pts]) => ({ userId, nombre: nombresMap[userId] || userId, pts }))
-    .sort((a, b) => b.pts - a.pts);
-
-  const medallas = ["🥇", "🥈", "🥉"];
-
-  let html = `
-    <table class="rankingTable">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Jugador</th>
-          <th>Puntos</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-
-  ranking.forEach((r, i) => {
-    const medalla = medallas[i] || `${i + 1}`;
-    const esTop = i < 3 ? "top3" : "";
-    html += `
-      <tr class="${esTop}">
-        <td class="posicion">${medalla}</td>
-        <td class="nombreJugador">${r.nombre}</td>
-        <td class="puntosJugador">${r.pts} pts</td>
-      </tr>
-    `;
-  });
-
-  html += `</tbody></table>`;
-  contenedor.innerHTML = html;
+.pendienteTag {
+  background: #78350f;
+  color: #fbbf24;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  margin-left: auto;
 }
 
-async function eliminarPartido(id) {
-  if (!confirm("¿Seguro que quieres eliminar este partido? También se borrarán sus apuestas.")) return;
-
-  // Borrar apuestas relacionadas primero
-  const { data: apuestas } = await db.from("apuestas").select("id").eq("partido_id", id);
-  if (apuestas?.length) {
-    const ids = apuestas.map(a => a.id);
-    await db.from("apuestas_detalle").delete().in("apuesta_id", ids);
-    await db.from("apuestas").delete().eq("partido_id", id);
-  }
-  await db.from("resultados").delete().eq("partido_id", id);
-  await db.from("partidos").delete().eq("id", id);
-
-  partidosCache = partidosCache.filter(p => p.id !== id);
-  renderizarPartidos(partidosCache);
+.adminCardBody {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-// ============================================================
-// HELPERS
-// ============================================================
-function toDatetimeLocal(isoString) {
-  const pad = n => String(n).padStart(2, "0");
-  const utc = new Date(isoString);
-  const co = new Date(utc.getTime() - 5 * 60 * 60 * 1000);
-  return `${co.getFullYear()}-${pad(co.getMonth()+1)}-${pad(co.getDate())}T${pad(co.getHours())}:${pad(co.getMinutes())}`;
+.vsLabel {
+  color: #475569;
+  font-weight: bold;
 }
-// Arrancar
-mostrarSeccion("partidos");
 
+/* Inputs */
+.inputEquipo {
+  background: #020617;
+  border: 1px solid #334155;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 160px;
+}
+
+.inputFecha {
+  background: #020617;
+  border: 1px solid #334155;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.inputEquipo:focus,
+.inputFecha:focus,
+.inputAdmin:focus {
+  outline: none;
+  border-color: #ff7a00;
+}
+
+/* Botón guardar */
+.btnGuardar {
+  background: #ff7a00;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 13px;
+  margin-left: auto;
+}
+
+.btnEliminar {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  margin-left: 8px;
+}
+.btnEliminar:hover { background: #b91c1c; }
+
+.btnGuardar:hover  { background: #ea580c; }
+.btnGuardar:disabled { opacity: 0.6; cursor: default; }
+
+/* Form nuevo partido */
+.formNuevo {
+  background: #0f172a;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 16px;
+  border: 1px solid #1e293b;
+}
+
+.formGrid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.inputAdmin {
+  background: #020617;
+  border: 1px solid #334155;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  min-width: 160px;
+}
+
+.formBtns {
+  display: flex;
+  gap: 12px;
+}
+
+/* ============================================================
+   Agregar al final de admin.css
+   ============================================================ */
+
+/* ---- TABS ---- */
+.tabsNav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #1e293b;
+  padding-bottom: 0;
+}
+
+.tabBtn {
+  background: transparent;
+  color: #64748b;
+  border: none;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 0;
+  transition: all 0.2s;
+}
+
+.tabBtn:hover  { color: #e2e8f0; }
+.tabBtn.activo { color: #ff7a00; border-bottom-color: #ff7a00; }
+
+/* ---- SECCIÓN DESC ---- */
+.seccionDesc {
+  color: #64748b;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+/* ---- CARDS RESULTADOS ---- */
+.yaIngresado  { border-left-color: #16a34a !important; }
+.sinResultado { border-left-color: #f59e0b !important; }
+
+.equiposResultado {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.equipoLabel { color: white; }
+
+.resultadoForm { display: flex; flex-direction: column; gap: 12px; }
+
+.resultadoFila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.resultadoFila label {
+  color: #94a3b8;
+  font-size: 13px;
+  min-width: 80px;
+}
+
+.inputStat {
+  background: #020617;
+  border: 1px solid #334155;
+  color: white;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 60px;
+  text-align: center;
+}
+
+.inputStat:focus { outline: none; border-color: #ff7a00; }
+
+.tagListo    { background: #052e16; color: #4ade80; padding: 2px 10px; border-radius: 20px; font-size: 12px; margin-left: auto; }
+.tagPendiente{ background: #78350f; color: #fbbf24; padding: 2px 10px; border-radius: 20px; font-size: 12px; margin-left: auto; }
+
+/* ---- RANKING TABLE ---- */
+.rankingTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.rankingTable thead tr {
+  background: #1e293b;
+  color: #94a3b8;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.rankingTable th,
+.rankingTable td {
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.rankingTable tbody tr {
+  border-bottom: 1px solid #0f172a;
+  transition: background 0.15s;
+}
+
+.rankingTable tbody tr:hover { background: #0f172a; }
+
+.rankingTable tbody tr.top3 { background: #0f172a; }
+
+.posicion      { font-size: 22px; width: 50px; }
+.nombreJugador { color: white; font-weight: bold; font-size: 15px; }
+.puntosJugador { color: #ff7a00; font-weight: bold; font-size: 16px; text-align: right; }
