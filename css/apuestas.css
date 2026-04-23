@@ -270,3 +270,51 @@
   border-bottom: 1px solid #1e293b;
   text-transform: capitalize;
 }
+
+/* ---- RADIO OPCIONES DE RESULTADO ---- */
+.resultadoOpciones {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.radioOpcion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #0f172a;
+  border: 2px solid #334155;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 14px;
+  transition: all 0.2s;
+  flex: 1;
+  min-width: 100px;
+  justify-content: center;
+}
+
+.radioOpcion input[type="radio"] {
+  display: none;
+}
+
+.radioOpcion:hover {
+  border-color: #ff7a00;
+  color: white;
+}
+
+.radioOpcion.seleccionada {
+  border-color: #ff7a00;
+  background: #1c0a00;
+  color: #ff7a00;
+  font-weight: bold;
+}
+
+/* ---- ERROR MARCADOR ---- */
+.marcadorError {
+  color: #f87171;
+  font-size: 12px;
+  margin-left: 8px;
+}
