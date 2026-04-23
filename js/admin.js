@@ -95,6 +95,7 @@ function renderizarPartidos(partidos) {
             <input class="inputFecha" type="datetime-local" id="f-${p.id}"
               value="${p.fecha ? toDatetimeLocal(p.fecha) : ""}" />
             <button class="btnGuardar" onclick="guardarPartido(${p.id})">💾 Guardar</button>
+            <button class="btnEliminar" onclick="eliminarPartido(${p.id})">🗑 Eliminar</button>
           </div>
         </div>
       `;
@@ -112,11 +113,11 @@ async function guardarPartido(id) {
   if (!equipo1 || !equipo2) { alert("Los nombres no pueden estar vacíos"); return; }
 
   const btn = document.querySelector(`button[onclick="guardarPartido(${id})"]`);
-  btn.disabled = true;
+  btn.disabled = true;  
   btn.textContent = "Guardando...";
 
   const updates = { equipo1, equipo2 };
-  if (fechaInput) updates.fecha = new Date(fechaInput).toISOString();
+  if (fechaInput) updates.fecha = fechaInput + ":00-05:00";
 
   const { error } = await db.from("partidos").update(updates).eq("id", id);
 
@@ -153,7 +154,7 @@ async function agregarPartido() {
 
   const { error } = await db.from("partidos").insert([{
     grupo_id: parseInt(grupoId), equipo1, equipo2,
-    fecha: fechaVal ? new Date(fechaVal).toISOString() : null
+    fecha: fechaVal ? fechaVal + ":00-05:00" : null
   }]);
 
   if (error) { alert("Error: " + error.message); return; }
@@ -386,14 +387,32 @@ async function cargarRanking() {
   contenedor.innerHTML = html;
 }
 
+async function eliminarPartido(id) {
+  if (!confirm("¿Seguro que quieres eliminar este partido? También se borrarán sus apuestas.")) return;
+
+  // Borrar apuestas relacionadas primero
+  const { data: apuestas } = await db.from("apuestas").select("id").eq("partido_id", id);
+  if (apuestas?.length) {
+    const ids = apuestas.map(a => a.id);
+    await db.from("apuestas_detalle").delete().in("apuesta_id", ids);
+    await db.from("apuestas").delete().eq("partido_id", id);
+  }
+  await db.from("resultados").delete().eq("partido_id", id);
+  await db.from("partidos").delete().eq("id", id);
+
+  partidosCache = partidosCache.filter(p => p.id !== id);
+  renderizarPartidos(partidosCache);
+}
+
 // ============================================================
 // HELPERS
 // ============================================================
 function toDatetimeLocal(isoString) {
-  const d = new Date(isoString);
   const pad = n => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const utc = new Date(isoString);
+  const co = new Date(utc.getTime() - 5 * 60 * 60 * 1000);
+  return `${co.getFullYear()}-${pad(co.getMonth()+1)}-${pad(co.getDate())}T${pad(co.getHours())}:${pad(co.getMinutes())}`;
 }
-
 // Arrancar
 mostrarSeccion("partidos");
+
