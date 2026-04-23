@@ -47,3 +47,12 @@ color:white;
 font-family: 'AkaPosse';
 font-size:40px;
 }
+
+.puntosNavbar {
+  background: #000000;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 5px;
+  font-size: 15px;
+  font-weight: bold;
+}
