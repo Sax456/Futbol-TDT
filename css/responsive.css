@@ -1,0 +1,20 @@
+@media (max-width: 768px) {
+  .titulos { font-size: 60px !important; padding: 15px !important; }
+  .subtitulos { font-size: 22px !important; margin-left: 15px !important; }
+  .navbar { flex-wrap: wrap; gap: 8px; padding: 10px 15px; }
+  .navRight { flex-wrap: wrap; gap: 8px; }
+  .btnBack, .btnLogout { padding: 6px 10px; font-size: 12px; }
+  .contenedorGrupos { padding: 20px 15px !important; }
+  #grupos { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important; gap: 15px !important; }
+  .contenedor_partidos { margin: 10px !important; padding: 10px !important; }
+  .equipoNombre { font-size: 14px !important; min-width: 80px !important; }
+  .radioOpcion { font-size: 12px !important; padding: 8px 6px !important; }
+  .btnApostar { width: 100% !important; }
+  .apuestaFooter { flex-direction: column !important; }
+  .adminContainer { padding: 15px !important; }
+  .adminCardBody { flex-direction: column !important; }
+  .inputEquipo, .inputFecha, .inputAdmin { width: 100% !important; }
+  .btnGuardar, .btnEliminar { width: 100% !important; margin-left: 0 !important; }
+  .tabBtn { padding: 10px 12px !important; font-size: 12px !important; }
+  h1 { font-size: 50px !important; }
+}
