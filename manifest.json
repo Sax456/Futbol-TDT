@@ -1,0 +1,31 @@
+{
+  "name": "TDT Mundial 2026",
+  "short_name": "TDT Mundial",
+  "description": "Polla del Mundial FIFA 2026 — Predice, compite y gana",
+  "start_url": "/Futbol-TDT/index.html",
+  "scope": "/Futbol-TDT/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#ff7a00",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "IMG/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "IMG/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "IMG/icons/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
