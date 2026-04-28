@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis Apuestas — TDT Mundial</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/apuestas.css">
+  <link rel="stylesheet" href="css/mis-apuestas.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ff7a00">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="TDT Mundial">
+  <link rel="apple-touch-icon" href="IMG/icons/icon-192.png">
+</head>
+<body>
+
+<div class="navbar">
+  <div class="navLeft">
+    <img src="IMG/logo TDT PERFIL.png" class="logo">
+    <h2>TDT Mundial</h2>
+  </div>
+  <div class="navRight">
+    <button onclick="volver()" class="btnBack">← Volver</button>
+    <span id="puntosNavbar" class="puntosNavbar"></span>
+    <span id="usuario">Usuario</span>
+    <button onclick="logout()" class="btnLogout">Salir</button>
+  </div>
+</div>
+
+<div class="tituloMisApuestas">
+  <div class="titulos">MIS APUESTAS</div>
+</div>
+
+<!-- RESUMEN RÁPIDO -->
+<div class="resumenContainer">
+  <div class="resumenCard" id="cardGanadas">
+    <div class="resumenIcon">✅</div>
+    <div class="resumenNum" id="numGanadas">—</div>
+    <div class="resumenLabel">Ganadas</div>
+  </div>
+  <div class="resumenCard" id="cardPendientes">
+    <div class="resumenIcon">⏳</div>
+    <div class="resumenNum" id="numPendientes">—</div>
+    <div class="resumenLabel">Pendientes</div>
+  </div>
+  <div class="resumenCard" id="cardPerdidas">
+    <div class="resumenIcon">❌</div>
+    <div class="resumenNum" id="numPerdidas">—</div>
+    <div class="resumenLabel">Perdidas</div>
+  </div>
+  <div class="resumenCard destacado">
+    <div class="resumenIcon">⭐</div>
+    <div class="resumenNum" id="numPuntos">—</div>
+    <div class="resumenLabel">Puntos totales</div>
+  </div>
+</div>
+
+<!-- FILTROS -->
+<div class="filtrosContainer">
+  <button class="filtroBtn activo" onclick="filtrar('todas')"  id="f-todas">Todas</button>
+  <button class="filtroBtn"        onclick="filtrar('ganada')" id="f-ganada">✅ Ganadas</button>
+  <button class="filtroBtn"        onclick="filtrar('pendiente')" id="f-pendiente">⏳ Pendientes</button>
+  <button class="filtroBtn"        onclick="filtrar('perdida')" id="f-perdida">❌ Perdidas</button>
+</div>
+
+<!-- LISTA DE APUESTAS -->
+<div class="misApuestasContainer">
+  <div id="listaApuestas">
+    <p style="color:#64748b; text-align:center; margin-top:40px;">Cargando apuestas...</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/navbar.js"></script>
+<script src="js/mis-apuestas.js"></script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js');
+    });
+  }
+</script>
+
+</body>
+</html>
