@@ -10,12 +10,14 @@ const PUNTOS = {
   corners  : 2
 };
 
+// Recalcula puntos para TODAS las apuestas del partido
+// (pendientes, ganadas y perdidas) para soportar correcciones del admin
 async function calcularPuntosPartido(partidoId, resultado) {
   const { data: apuestas, error } = await db
     .from("apuestas")
     .select("*, apuestas_detalle(*)")
-    .eq("partido_id", partidoId)
-    .eq("estado", "pendiente");
+    .eq("partido_id", partidoId);
+    // Sin filtro de estado — recalcula todo, incluso si ya fue procesado
 
   if (error || !apuestas || apuestas.length === 0) return;
 
