@@ -1,96 +1,52 @@
-console.log("JS cargado");
+// ============================================================
+// dashboard.js — Carga grupos TDT Mundial
+// ============================================================
 
+async function cargarGrupos() {
+  const contenedor = document.getElementById("grupos");
+  contenedor.innerHTML = "Cargando grupos...";
 
-async function cargarGrupos(){
+  const { data: grupos, error } = await db
+    .from("grupos")
+    .select("*")
+    .order("id", { ascending: true });
 
-console.log("Entró a cargarGrupos");
+  if (error || !grupos) {
+    contenedor.innerHTML = "<p>Error cargando grupos</p>";
+    return;
+  }
 
-let contenedor =
-document.getElementById("grupos")
+  // Contar partidos por grupo (sin depender de tabla equipos)
+  const { data: partidos } = await db
+    .from("partidos")
+    .select("id, grupo_id");
 
-contenedor.innerHTML="Cargando grupos..."
+  const conteoPartidos = {};
+  (partidos || []).forEach(p => {
+    conteoPartidos[p.grupo_id] = (conteoPartidos[p.grupo_id] || 0) + 1;
+  });
 
-let { data: grupos, error } = await db
+  contenedor.innerHTML = "";
 
-.from("grupos")
-
-.select("*")
-
-console.log("DATOS:", grupos)
-console.log("ERROR:", error)
-
-
-
-contenedor.innerHTML=""
-
-
-// Mostrar grupos
-for(let g of grupos){
-
-// contar equipos del grupo
-let { data: equipos } = await db
-
-.from("equipos")
-
-.select("*")
-
-.eq("grupo_id",g.id)
-
-
-contenedor.innerHTML+=`
-
-<div class="grupoCard">
-
-<h2>${g.nombre}</h2>
-
-<p>${equipos.length} equipos</p>
-
-<button 
-
-class="grupoBtn"
-
-onclick="entrarGrupo(${g.id})"
-
->
-
-Entrar
-
-</button>
-
-</div>
-
-`
-
+  for (const g of grupos) {
+    const numPartidos = conteoPartidos[g.id] || 0;
+    contenedor.innerHTML += `
+      <div class="grupoCard" onclick="entrarGrupo(${g.id})">
+        <h2>${g.nombre}</h2>
+        <button class="grupoBtn">Entrar</button>
+      </div>
+    `;
+  }
 }
 
+function entrarGrupo(id) {
+  window.location.href = "grupo.html?grupo=" + id;
 }
 
-
-// entrar al grupo
-function entrarGrupo(id){
-
-window.location.href =
-
-"grupo.html?grupo="+id
-
+function logout() {
+  localStorage.removeItem("usuario");
+  localStorage.removeItem("rol");
+  window.location = "index.html";
 }
 
-
-// logout
-function logout(){
-
-localStorage.removeItem(
-
-"usuario"
-
-)
-
-window.location=
-
-"index.html"
-
-}
-
-
-// cargar cuando abre página
-cargarGrupos()
+cargarGrupos();
