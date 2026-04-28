@@ -2,17 +2,28 @@
 // admin.js — Panel administrador TDT Mundial
 // ============================================================
 
-const rolGuardado = localStorage.getItem("rol");
-if (rolGuardado !== "admin") {
-  alert("Acceso denegado");
-  window.location = "index.html";
-}
+// Protección de ruta — verifica rol real desde localStorage
+const _usuarioAdmin = (() => {
+  try {
+    const raw = localStorage.getItem("usuario");
+    if (!raw) throw new Error("no session");
+    const u = JSON.parse(raw);
+    if (u.rol !== "admin") throw new Error("not admin");
+    return u;
+  } catch {
+    alert("Acceso denegado");
+    window.location.replace("index.html");
+    return null;
+  }
+})();
+
+if (!_usuarioAdmin) throw new Error("stop");
 
 let partidosCache = [];
-let vistaActual = "partidos"; // "partidos" | "resultados" | "ranking"
+let vistaActual = "partidos";
 
 // ============================================================
-// NAVEGACIÓN ENTRE SECCIONES
+// NAVEGACIÓN
 // ============================================================
 function mostrarSeccion(seccion) {
   vistaActual = seccion;
@@ -20,7 +31,6 @@ function mostrarSeccion(seccion) {
   document.querySelectorAll(".tabBtn").forEach(b => b.classList.remove("activo"));
   document.getElementById("seccion-" + seccion).style.display = "block";
   document.getElementById("tab-" + seccion).classList.add("activo");
-
   if (seccion === "resultados") cargarPartidosResultados();
   if (seccion === "ranking")    cargarRanking();
   if (seccion === "partidos")   cargarPartidosAdmin();
@@ -42,23 +52,16 @@ async function cargarPartidosAdmin() {
     contenedor.innerHTML = `<p style="color:red">Error: ${error.message}</p>`;
     return;
   }
-
   partidosCache = partidos;
   renderizarPartidos(partidos);
 }
 
 function renderizarPartidos(partidos) {
-  const contenedor = document.getElementById("listaPartidos");
+  const contenedor  = document.getElementById("listaPartidos");
   const filtroGrupo = document.getElementById("filtroGrupo").value;
+  const filtrados   = filtroGrupo ? partidos.filter(p => p.grupo_id == filtroGrupo) : partidos;
 
-  const filtrados = filtroGrupo
-    ? partidos.filter(p => p.grupo_id == filtroGrupo)
-    : partidos;
-
-  if (filtrados.length === 0) {
-    contenedor.innerHTML = "<p>No hay partidos.</p>";
-    return;
-  }
+  if (filtrados.length === 0) { contenedor.innerHTML = "<p>No hay partidos.</p>"; return; }
 
   const porMes = {};
   for (const p of filtrados) {
@@ -94,87 +97,79 @@ function renderizarPartidos(partidos) {
             <input class="inputEquipo" id="e2-${p.id}" value="${p.equipo2}" placeholder="Equipo 2" />
             <input class="inputFecha" type="datetime-local" id="f-${p.id}"
               value="${p.fecha ? toDatetimeLocal(p.fecha) : ""}" />
-            <button class="btnGuardar" onclick="guardarPartido(${p.id})">💾 Guardar</button>
+            <button class="btnGuardar"  onclick="guardarPartido(${p.id})">💾 Guardar</button>
             <button class="btnEliminar" onclick="eliminarPartido(${p.id})">🗑 Eliminar</button>
           </div>
         </div>
       `;
     }
   }
-
   contenedor.innerHTML = html;
-}
-
-async function guardarPartido(id) {
-  const equipo1    = document.getElementById(`e1-${id}`).value.trim();
-  const equipo2    = document.getElementById(`e2-${id}`).value.trim();
-  const fechaInput = document.getElementById(`f-${id}`).value;
-
-  if (!equipo1 || !equipo2) { alert("Los nombres no pueden estar vacíos"); return; }
-
-  const btn = document.querySelector(`button[onclick="guardarPartido(${id})"]`);
-  btn.disabled = true;  
-  btn.textContent = "Guardando...";
-
-  const updates = { equipo1, equipo2 };
-  if (fechaInput) updates.fecha = fechaInput + ":00-05:00";
-
-  const { error } = await db.from("partidos").update(updates).eq("id", id);
-
-  if (error) {
-    alert("Error: " + error.message);
-    btn.disabled = false;
-    btn.textContent = "💾 Guardar";
-    return;
-  }
-
-  btn.textContent = "✅ Guardado";
-  setTimeout(() => { btn.disabled = false; btn.textContent = "💾 Guardar"; }, 2000);
-
-  const idx = partidosCache.findIndex(p => p.id === id);
-  if (idx !== -1) {
-    partidosCache[idx].equipo1 = equipo1;
-    partidosCache[idx].equipo2 = equipo2;
-    if (fechaInput) partidosCache[idx].fecha = new Date(fechaInput).toISOString();
-  }
-}
-
-function mostrarFormNuevo() {
-  document.getElementById("formNuevo").style.display = "block";
-  document.getElementById("btnMostrarForm").style.display = "none";
-}
-
-async function agregarPartido() {
-  const grupoId  = document.getElementById("nuevoGrupo").value;
-  const equipo1  = document.getElementById("nuevoE1").value.trim();
-  const equipo2  = document.getElementById("nuevoE2").value.trim();
-  const fechaVal = document.getElementById("nuevoFecha").value;
-
-  if (!grupoId || !equipo1 || !equipo2) { alert("Completa grupo y ambos equipos"); return; }
-
-  const { error } = await db.from("partidos").insert([{
-    grupo_id: parseInt(grupoId), equipo1, equipo2,
-    fecha: fechaVal ? fechaVal + ":00-05:00" : null
-  }]);
-
-  if (error) { alert("Error: " + error.message); return; }
-
-  alert("✅ Partido agregado");
-  document.getElementById("formNuevo").style.display = "none";
-  document.getElementById("btnMostrarForm").style.display = "inline-block";
-  ["nuevoGrupo","nuevoE1","nuevoE2","nuevoFecha"].forEach(id => {
-    document.getElementById(id).value = "";
-  });
-  await cargarPartidosAdmin();
-}
-
-function cancelarNuevo() {
-  document.getElementById("formNuevo").style.display = "none";
-  document.getElementById("btnMostrarForm").style.display = "inline-block";
 }
 
 function filtrarPartidos() {
   renderizarPartidos(partidosCache);
+}
+
+function toDatetimeLocal(isoString) {
+  const d = new Date(isoString);
+  d.setMinutes(d.getMinutes() - 300); // UTC → Colombia (UTC-5)
+  return d.toISOString().slice(0, 16);
+}
+
+async function guardarPartido(id) {
+  const equipo1 = document.getElementById(`e1-${id}`).value.trim();
+  const equipo2 = document.getElementById(`e2-${id}`).value.trim();
+  const fechaRaw = document.getElementById(`f-${id}`).value;
+
+  if (!equipo1 || !equipo2) { alert("Completa los nombres de los equipos"); return; }
+
+  const fecha = fechaRaw ? fechaRaw + ":00-05:00" : null;
+
+  const { error } = await db
+    .from("partidos")
+    .update({ equipo1, equipo2, fecha })
+    .eq("id", id);
+
+  if (error) { alert("Error: " + error.message); return; }
+  alert("✅ Partido guardado");
+  cargarPartidosAdmin();
+}
+
+async function eliminarPartido(id) {
+  if (!confirm("¿Eliminar este partido y todas sus apuestas?")) return;
+
+  // Buscar apuestas del partido
+  const { data: apuestas } = await db
+    .from("apuestas")
+    .select("id")
+    .eq("partido_id", id);
+
+  if (apuestas && apuestas.length > 0) {
+    const apuestaIds = apuestas.map(a => a.id);
+    await db.from("apuestas_detalle").delete().in("apuesta_id", apuestaIds);
+    await db.from("apuestas").delete().in("id", apuestaIds);
+  }
+
+  await db.from("resultados").delete().eq("partido_id", id);
+  const { error } = await db.from("partidos").delete().eq("id", id);
+
+  if (error) { alert("Error al eliminar: " + error.message); return; }
+  alert("✅ Partido eliminado");
+  cargarPartidosAdmin();
+}
+
+async function agregarPartido() {
+  const grupoId = prompt("ID del grupo (1-12):");
+  if (!grupoId) return;
+
+  const { error } = await db
+    .from("partidos")
+    .insert([{ equipo1: "Por definir", equipo2: "Por definir", grupo_id: parseInt(grupoId) }]);
+
+  if (error) { alert("Error: " + error.message); return; }
+  alert("✅ Partido creado");
+  cargarPartidosAdmin();
 }
 
 // ============================================================
@@ -184,132 +179,101 @@ async function cargarPartidosResultados() {
   const contenedor = document.getElementById("listaResultados");
   contenedor.innerHTML = "<p>Cargando...</p>";
 
-  // Traer partidos que ya iniciaron
   const ahora = new Date().toISOString();
+
   const { data: partidos, error } = await db
     .from("partidos")
     .select("*, grupos(nombre)")
     .lte("fecha", ahora)
     .order("fecha", { ascending: false });
 
-  if (error || !partidos) {
-    contenedor.innerHTML = "<p>Error cargando partidos</p>";
-    return;
-  }
+  if (error) { contenedor.innerHTML = `<p style="color:red">Error: ${error.message}</p>`; return; }
 
-  // Traer resultados ya ingresados
-  const { data: resultados } = await db
-    .from("resultados")
-    .select("*");
+  const { data: resultados } = await db.from("resultados").select("*");
+  const resMap = {};
+  (resultados || []).forEach(r => { resMap[r.partido_id] = r; });
 
-  const resultadosMap = {};
-  (resultados || []).forEach(r => { resultadosMap[r.partido_id] = r; });
-
-  if (partidos.length === 0) {
-    contenedor.innerHTML = "<p>Aún no hay partidos finalizados.</p>";
+  if (!partidos || partidos.length === 0) {
+    contenedor.innerHTML = "<p>No hay partidos iniciados aún.</p>";
     return;
   }
 
   let html = "";
   for (const p of partidos) {
-    const r = resultadosMap[p.id];
-    const yaIngresado = !!r;
-
+    const res = resMap[p.id];
     html += `
-      <div class="adminCard ${yaIngresado ? "yaIngresado" : "sinResultado"}">
-        <div class="adminCardTop">
-          <span class="grupoTag">${p.grupos?.nombre || "Grupo ?"}</span>
-          <span class="fechaTag">
-            ${new Date(p.fecha).toLocaleString("es-CO", {
-              day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
-            })}
-          </span>
-          ${yaIngresado
-            ? `<span class="tagListo">✅ Resultado ingresado</span>`
-            : `<span class="tagPendiente">⏳ Sin resultado</span>`}
+      <div class="resultadoCard ${res ? "conResultado" : ""}">
+        <div class="resultadoTop">
+          <span class="grupoTag">${p.grupos?.nombre || "?"}</span>
+          <span class="fechaTag">${new Date(p.fecha).toLocaleString("es-CO", {
+            day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+          })}</span>
+          ${res ? '<span class="tagCompletado">✅ Ingresado</span>' : ""}
         </div>
-        <div class="equiposResultado">
-          <span class="equipoLabel">${p.equipo1}</span>
+        <div class="resultadoEquipos">
+          <strong>${p.equipo1}</strong>
           <span class="vsLabel">vs</span>
-          <span class="equipoLabel">${p.equipo2}</span>
+          <strong>${p.equipo2}</strong>
         </div>
-        <div class="resultadoForm">
-          <div class="resultadoFila">
+        <div class="resultadoInputs">
+          <div class="inputGrupo">
             <label>Goles ${p.equipo1}</label>
-            <input type="number" min="0" max="20" class="inputStat"
-              id="rg1-${p.id}" value="${r ? r.goles1 : ""}" placeholder="0" />
-            <label>Goles ${p.equipo2}</label>
-            <input type="number" min="0" max="20" class="inputStat"
-              id="rg2-${p.id}" value="${r ? r.goles2 : ""}" placeholder="0" />
+            <input type="number" min="0" id="g1-${p.id}" value="${res?.goles1 ?? ""}" placeholder="0" />
           </div>
-          <div class="resultadoFila">
+          <div class="inputGrupo">
+            <label>Goles ${p.equipo2}</label>
+            <input type="number" min="0" id="g2-${p.id}" value="${res?.goles2 ?? ""}" placeholder="0" />
+          </div>
+          <div class="inputGrupo">
             <label>🟨 Amarillas</label>
-            <input type="number" min="0" max="20" class="inputStat"
-              id="ram-${p.id}" value="${r ? r.amarillas : ""}" placeholder="0" />
+            <input type="number" min="0" id="am-${p.id}" value="${res?.amarillas ?? ""}" placeholder="0" />
+          </div>
+          <div class="inputGrupo">
             <label>🟥 Rojas</label>
-            <input type="number" min="0" max="20" class="inputStat"
-              id="rro-${p.id}" value="${r ? r.rojas : ""}" placeholder="0" />
+            <input type="number" min="0" id="ro-${p.id}" value="${res?.rojas ?? ""}" placeholder="0" />
+          </div>
+          <div class="inputGrupo">
             <label>🚩 Corners</label>
-            <input type="number" min="0" max="20" class="inputStat"
-              id="rco-${p.id}" value="${r ? r.corners : ""}" placeholder="0" />
+            <input type="number" min="0" id="co-${p.id}" value="${res?.corners ?? ""}" placeholder="0" />
           </div>
           <button class="btnGuardar" onclick="guardarResultado(${p.id}, '${p.equipo1}', '${p.equipo2}')">
-            ${yaIngresado ? "🔄 Actualizar resultado" : "💾 Guardar resultado"}
+            💾 Guardar resultado
           </button>
         </div>
       </div>
     `;
   }
-
   contenedor.innerHTML = html;
 }
 
 async function guardarResultado(partidoId, equipo1, equipo2) {
-  const goles1    = document.getElementById(`rg1-${partidoId}`).value;
-  const goles2    = document.getElementById(`rg2-${partidoId}`).value;
-  const amarillas = document.getElementById(`ram-${partidoId}`).value;
-  const rojas     = document.getElementById(`rro-${partidoId}`).value;
-  const corners   = document.getElementById(`rco-${partidoId}`).value;
+  const goles1    = document.getElementById(`g1-${partidoId}`).value;
+  const goles2    = document.getElementById(`g2-${partidoId}`).value;
+  const amarillas = document.getElementById(`am-${partidoId}`).value;
+  const rojas     = document.getElementById(`ro-${partidoId}`).value;
+  const corners   = document.getElementById(`co-${partidoId}`).value;
 
-  if (goles1 === "" || goles2 === "") {
-    alert("Ingresa al menos los goles de ambos equipos");
-    return;
-  }
+  if (goles1 === "" || goles2 === "") { alert("Ingresa los goles de ambos equipos"); return; }
 
-  const btn = document.querySelector(`button[onclick="guardarResultado(${partidoId}, '${equipo1}', '${equipo2}')"]`);
-  btn.disabled = true;
-  btn.textContent = "Guardando...";
-
-  const resultado = {
-    partido_id: partidoId,
-    goles1    : parseInt(goles1),
-    goles2    : parseInt(goles2),
-    amarillas : parseInt(amarillas || 0),
-    rojas     : parseInt(rojas     || 0),
-    corners   : parseInt(corners   || 0)
-  };
-
-  // Upsert resultado
   const { error } = await db
     .from("resultados")
-    .upsert(resultado, { onConflict: "partido_id" });
+    .upsert({
+      partido_id: partidoId,
+      goles1    : parseInt(goles1),
+      goles2    : parseInt(goles2),
+      amarillas : amarillas !== "" ? parseInt(amarillas) : null,
+      rojas     : rojas     !== "" ? parseInt(rojas)     : null,
+      corners   : corners   !== "" ? parseInt(corners)   : null,
+      ingresado_en: new Date().toISOString()
+    }, { onConflict: "partido_id" });
 
-  if (error) {
-    alert("Error: " + error.message);
-    btn.disabled = false;
-    btn.textContent = "💾 Guardar resultado";
-    return;
-  }
+  if (error) { alert("Error al guardar: " + error.message); return; }
 
-  // Calcular puntos de todos los usuarios que apostaron
-  await calcularPuntosPartido(partidoId, { ...resultado, equipo1, equipo2 });
+  // Recalcular puntos (también corrige apuestas ya procesadas)
+  await calcularPuntosPartido(partidoId, { equipo1, equipo2, goles1, goles2, amarillas, rojas, corners });
 
-  btn.textContent = "✅ Guardado y puntos calculados";
-  setTimeout(() => {
-    btn.disabled = false;
-    btn.textContent = "🔄 Actualizar resultado";
-    cargarPartidosResultados();
-  }, 2000);
+  alert("✅ Resultado guardado y puntos actualizados");
+  cargarPartidosResultados();
 }
 
 // ============================================================
@@ -317,102 +281,48 @@ async function guardarResultado(partidoId, equipo1, equipo2) {
 // ============================================================
 async function cargarRanking() {
   const contenedor = document.getElementById("tablaRanking");
-  contenedor.innerHTML = "<p>Cargando ranking...</p>";
+  contenedor.innerHTML = "<p>Calculando...</p>";
 
-  // Sumar puntos por usuario
-  const { data, error } = await db
+  const { data: apuestas, error } = await db
     .from("apuestas")
     .select("usuario_id, puntos_ganados")
     .eq("estado", "ganada");
 
-  if (error) {
-    contenedor.innerHTML = "<p>Error cargando ranking</p>";
-    return;
-  }
+  const { data: usuarios } = await db.from("usuarios").select("user, nombre");
 
-  if (!data || data.length === 0) {
-    contenedor.innerHTML = "<p>Aún no hay puntos registrados.</p>";
-    return;
-  }
+  if (error || !usuarios) { contenedor.innerHTML = "<p>Error cargando ranking</p>"; return; }
 
-  // Agrupar puntos por usuario
   const puntosMap = {};
-  data.forEach(a => {
-    if (!puntosMap[a.usuario_id]) puntosMap[a.usuario_id] = 0;
-    puntosMap[a.usuario_id] += a.puntos_ganados;
+  (apuestas || []).forEach(a => {
+    puntosMap[a.usuario_id] = (puntosMap[a.usuario_id] || 0) + (a.puntos_ganados || 0);
   });
 
-  // Obtener nombres de usuarios
-  const usuarioIds = Object.keys(puntosMap);
-  const { data: usuarios } = await db
-    .from("usuarios")
-    .select("user, nombre")
-    .in("user", usuarioIds);
-
-  const nombresMap = {};
-  (usuarios || []).forEach(u => { nombresMap[u.user] = u.nombre; });
-
-  // Ordenar por puntos
-  const ranking = Object.entries(puntosMap)
-    .map(([userId, pts]) => ({ userId, nombre: nombresMap[userId] || userId, pts }))
-    .sort((a, b) => b.pts - a.pts);
+  const ranking = usuarios
+    .filter(u => u.rol !== "admin")
+    .map(u => ({ nombre: u.nombre, user: u.user, puntos: puntosMap[u.user] || 0 }))
+    .sort((a, b) => b.puntos - a.puntos);
 
   const medallas = ["🥇", "🥈", "🥉"];
 
   let html = `
     <table class="rankingTable">
       <thead>
-        <tr>
-          <th>#</th>
-          <th>Jugador</th>
-          <th>Puntos</th>
-        </tr>
+        <tr><th>#</th><th>Usuario</th><th>Puntos</th></tr>
       </thead>
       <tbody>
   `;
-
   ranking.forEach((r, i) => {
-    const medalla = medallas[i] || `${i + 1}`;
-    const esTop = i < 3 ? "top3" : "";
     html += `
-      <tr class="${esTop}">
-        <td class="posicion">${medalla}</td>
-        <td class="nombreJugador">${r.nombre}</td>
-        <td class="puntosJugador">${r.pts} pts</td>
+      <tr class="${i < 3 ? "top3" : ""}">
+        <td>${medallas[i] || (i + 1)}</td>
+        <td>${r.nombre}</td>
+        <td class="puntosCell">⭐ ${r.puntos}</td>
       </tr>
     `;
   });
-
-  html += `</tbody></table>`;
+  html += "</tbody></table>";
   contenedor.innerHTML = html;
 }
 
-async function eliminarPartido(id) {
-  if (!confirm("¿Seguro que quieres eliminar este partido? También se borrarán sus apuestas.")) return;
-
-  // Borrar apuestas relacionadas primero
-  const { data: apuestas } = await db.from("apuestas").select("id").eq("partido_id", id);
-  if (apuestas?.length) {
-    const ids = apuestas.map(a => a.id);
-    await db.from("apuestas_detalle").delete().in("apuesta_id", ids);
-    await db.from("apuestas").delete().eq("partido_id", id);
-  }
-  await db.from("resultados").delete().eq("partido_id", id);
-  await db.from("partidos").delete().eq("id", id);
-
-  partidosCache = partidosCache.filter(p => p.id !== id);
-  renderizarPartidos(partidosCache);
-}
-
-// ============================================================
-// HELPERS
-// ============================================================
-function toDatetimeLocal(isoString) {
-  const pad = n => String(n).padStart(2, "0");
-  const utc = new Date(isoString);
-  const co = new Date(utc.getTime() - 5 * 60 * 60 * 1000);
-  return `${co.getFullYear()}-${pad(co.getMonth()+1)}-${pad(co.getDate())}T${pad(co.getHours())}:${pad(co.getMinutes())}`;
-}
-// Arrancar
-mostrarSeccion("partidos");
-
+// Iniciar en la sección de partidos
+cargarPartidosAdmin();
