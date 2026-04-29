@@ -318,3 +318,43 @@
   font-size: 12px;
   margin-left: 8px;
 }
+
+/* ---- OPCIONES DE AMARILLAS Y CORNERS ---- */
+.opcionesWrap {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.opcionesWrap .radioOpcion {
+  flex: unset;
+  min-width: unset;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.opcionPts {
+  color: #22d3ee;
+  font-size: 12px;
+  font-weight: bold;
+  margin-left: auto;
+}
+
+.radioOpcion.seleccionada .opcionPts {
+  color: #ff7a00;
+}
+
+/* Aviso especial de 0 corners */
+.cornersAviso {
+  color: #f59e0b;
+  font-size: 11px;
+  font-style: italic;
+  margin-left: 6px;
+}
+
+/* Input hint de rojas */
+.inputHint {
+  color: #64748b;
+  font-size: 12px;
+  font-style: italic;
+}
