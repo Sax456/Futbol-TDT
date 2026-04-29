@@ -9,8 +9,8 @@ body {
     -45deg,
     transparent,
     transparent 60px,
-    rgba(224, 101, 1, 0.288) 60px,
-    rgba(206, 108, 27, 0.308) 61px
+    rgba(255,255,255,0.015) 60px,
+    rgba(255,255,255,0.015) 61px
   );
   display: flex;
   justify-content: center;
@@ -68,7 +68,6 @@ body::before {
   opacity: 0;
   transform: translateX(-20px);
   transition: opacity 0.3s ease, transform 0.3s ease;
-  font-size: 25px;
 }
 
 .loginRegistro.visible {
