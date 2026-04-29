@@ -160,14 +160,23 @@ async function eliminarPartido(id) {
 }
 
 async function agregarPartido() {
-  const grupoId = prompt("ID del grupo (1-12):");
-  if (!grupoId) return;
+  const grupoId = document.getElementById("nuevoGrupo").value;
+  const equipo1 = document.getElementById("nuevoE1").value.trim();
+  const equipo2 = document.getElementById("nuevoE2").value.trim();
+  const fechaRaw = document.getElementById("nuevoFecha").value;
+
+  if (!grupoId) { alert("Selecciona un grupo"); return; }
+  if (!equipo1 || !equipo2) { alert("Ingresa los nombres de los equipos"); return; }
+
+  const fecha = fechaRaw ? fechaRaw + ":00-05:00" : null;
 
   const { error } = await db
     .from("partidos")
-    .insert([{ equipo1: "Por definir", equipo2: "Por definir", grupo_id: parseInt(grupoId) }]);
+    .insert([{ equipo1, equipo2, grupo_id: parseInt(grupoId), fecha }]);
 
   if (error) { alert("Error: " + error.message); return; }
+
+  cancelarNuevo();
   alert("✅ Partido creado");
   cargarPartidosAdmin();
 }
@@ -326,3 +335,17 @@ async function cargarRanking() {
 
 // Iniciar en la sección de partidos
 cargarPartidosAdmin();
+
+function mostrarFormNuevo() {
+  document.getElementById("formNuevo").style.display = "block";
+  document.getElementById("btnMostrarForm").style.display = "none";
+}
+
+function cancelarNuevo() {
+  document.getElementById("formNuevo").style.display = "none";
+  document.getElementById("btnMostrarForm").style.display = "block";
+  document.getElementById("nuevoGrupo").value = "";
+  document.getElementById("nuevoE1").value = "";
+  document.getElementById("nuevoE2").value = "";
+  document.getElementById("nuevoFecha").value = "";
+}
