@@ -1,241 +1,168 @@
 @font-face {
   font-family: 'AkaPosse';
-  src: url('../font/AkaPosse.ttf') format('truetype');
+  src: url('font/AkaPosse.ttf') format('truetype');
 }
 
-body{
-
-background-image: url('IMG/BANNER\ FONDO\ TDT\ JPG.jpg.jpeg');
-background-size: cover;
-background-position: center;
-background-repeat: no-repeat;
-background-color: black; /* relleno si sobra espacio */
-
-display:flex;
-
-justify-content:center;
-
-align-items:center;
-
-height:100vh;
-
-color:#ff9900;
-
+body {
+  background-color: #111314;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 60px,
+    rgba(224, 101, 1, 0.288) 60px,
+    rgba(206, 108, 27, 0.308) 61px
+  );
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  color: #ff9900;
+  position: relative;
+  overflow: hidden;
 }
 
-
-.login{
-
-background:#111827;
-
-padding:40px;
-
-font-family: 'AkaPosse';
-
-border-radius:15px;
-
-letter-spacing: 2px;
-
-width:320px;
-
-border-top:4px solid #ff7a00;
-
-box-shadow:0 20px 40px rgb(255, 102, 0);
-
+body::before {
+  content: "TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS  TIERRA DE TODOS";
+  position: fixed;
+  top: -100%;
+  left: -20%;
+  width: 160%;
+  height: 400%;
+  font-family: 'AkaPosse', sans-serif;
+  font-size: 28px;
+  color: rgba(255, 255, 255, 0.04);
+  word-spacing: 20px;
+  line-height: 2.8em;
+  letter-spacing: 4px;
+  transform: rotate(-35deg);
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
 }
 
-.titulologin{
-
-padding: 0px;
-color:rgb(255, 102, 0);
-font-family: 'AkaPosse';
-font-size:100px;
-
+/* ---- WRAPPER — contiene los dos cards lado a lado ---- */
+.loginWrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  position: relative;
+  z-index: 1;
 }
 
-
-h1{
-font-family: 'AkaPosse';
-font-size:40px;
-margin-bottom:10px;
-letter-spacing: 2px;
+/* ---- CARD BASE ---- */
+.login {
+  background: #111827;
+  padding: 40px;
+  font-family: 'AkaPosse';
+  border-radius: 15px;
+  letter-spacing: 2px;
+  width: 320px;
+  border-top: 4px solid #ff7a00;
+  box-shadow: 0 20px 40px rgba(255, 102, 0, 0.4);
 }
 
-hr{
-
-border:1px solid #ff7a00;
-
-margin:20px 0;
-
+/* ---- CARD REGISTRO — oculto y animado ---- */
+.loginRegistro {
+  display: none;
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  font-size: 25px;
 }
 
-
-input{
-
-width:100%;
-
-padding:10px;
-
-margin-bottom:10px;
-
-border:none;
-
-border-radius:6px;
-
-background:#1f2937;
-
-color:white;
-
+.loginRegistro.visible {
+  display: block;
+  opacity: 1;
+  transform: translateX(0);
 }
 
-
-
-button{
-
-width:100%;
-
-padding:10px;
-
-background:#ff7a00;
-
-border:none;
-
-border-radius:8px;
-
-color:white;
-
-font-weight:bold;
-
-cursor:pointer;
-
+/* Forzar animación con requestAnimationFrame */
+.loginRegistro.aparecer {
+  display: block;
 }
 
-
-
-.contenedorGrupos{
-
-padding:30px;
-
+h1 {
+  font-family: 'AkaPosse';
+  font-size: 36px;
+  margin-bottom: 10px;
+  letter-spacing: 2px;
 }
 
-
-
-.grupoCard{
-
-background:#0f172a;
-
-padding:20px;
-
-margin-bottom:20px;
-
-border-radius:12px;
-
-border-left:6px solid #ff7a00;
-
-box-shadow:0 5px 15px rgba(0,0,0,0.3);
-
-transition:.3s;
-
+h3 {
+  color: #ff7a00;
+  margin-bottom: 20px;
 }
 
-
-
-.grupoCard:hover{
-
-transform:translateY(-5px);
-
+hr {
+  border: 1px solid #ff7a00;
+  margin: 20px 0;
 }
 
-
-
-.grupoHeader{
-
-display:flex;
-
-justify-content:space-between;
-
-align-items:center;
-
+input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: none;
+  border-radius: 6px;
+  background: #1f2937;
+  color: white;
+  box-sizing: border-box;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
 }
 
-
-
-.estado{
-
-padding:6px 12px;
-
-border-radius:20px;
-
-font-size:14px;
-
+input:focus {
+  outline: 2px solid #ff7a00;
 }
 
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] { -moz-appearance: textfield; }
 
-
-.abierto{
-
-background:#16a34a;
-
+button {
+  width: 100%;
+  padding: 10px;
+  background: #ff7a00;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: 'AkaPosse';
+  letter-spacing: 2px;
+  transition: background 0.2s;
 }
 
+button:hover { background: #ea580c; }
 
+/* ---- RESPONSIVE MÓVIL — apilado vertical ---- */
+@media (max-width: 768px) {
+  body {
+    overflow-y: auto;
+    align-items: flex-start;
+    padding: 30px 0;
+  }
 
-.bloqueado{
+  .loginWrapper {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    padding: 0 16px;
+    box-sizing: border-box;
+  }
 
-background:#6b7280;
+  .login {
+    width: 100%;
+    max-width: 360px;
+    box-sizing: border-box;
+  }
 
-}
-
-
-
-.cerrado{
-
-background:#dc2626;
-
-}
-
-
-
-.grupoBtn{
-
-margin-top:15px;
-
-padding:10px;
-
-border:none;
-
-border-radius:8px;
-
-background:#ff7a00;
-
-color:white;
-
-cursor:pointer;
-
-width:100%;
-
-font-weight:bold;
-
-}
-
-
-
-.grupoBtn:disabled{
-
-background:gray;
-
-cursor:not-allowed;
-
-}
-
-
-
-.contador{
-
-margin-top:10px;
-
-font-size:14px;
-
-color:#94a3b8;
-
+  .loginRegistro.visible {
+    transform: translateY(0);
+  }
 }
