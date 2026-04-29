@@ -1,9 +1,8 @@
-                                                                                                                                                              // ============================================================
+// ============================================================
 // auth.js — Login, registro y protección de rutas
 // TDT Mundial 2026
 // ============================================================
 
-// --- HASH SHA-256 -------------------------------------------
 async function hashPass(password) {
   const encoder = new TextEncoder();
   const data = encoder.encode(password);
@@ -12,14 +11,9 @@ async function hashPass(password) {
   return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-// --- PROTECCIÓN DE RUTAS ------------------------------------
-// Llama esta función al inicio de cada página protegida
 function requireAuth(rolRequerido = "user") {
   const raw = localStorage.getItem("usuario");
-  if (!raw) {
-    window.location.replace("login.html");
-    return null;
-  }
+  if (!raw) { window.location.replace("login.html"); return null; }
   const usuario = JSON.parse(raw);
   if (rolRequerido === "admin" && usuario.rol !== "admin") {
     window.location.replace("dashboard.html");
@@ -28,88 +22,123 @@ function requireAuth(rolRequerido = "user") {
   return usuario;
 }
 
-// --- REGISTRO -----------------------------------------------
+// ---- MOSTRAR REGISTRO (con animación al lado) ---------------
 const fechaLimite = new Date("2026-06-11");
 
 function mostrarRegistro() {
-  if (new Date() > fechaLimite) {
-    alert("Registro cerrado");
-    return;
-  }
-  document.getElementById("registro").style.display = "block";
+  if (new Date() > fechaLimite) { alert("Registro cerrado"); return; }
+
+  const card = document.getElementById("cardRegistro");
+  const btn  = document.getElementById("btnCrearCuenta");
+
+  btn.style.display = "none";
+  document.getElementById("error").textContent = "";
+
+  // Paso 1: hacer visible en el DOM para que ocupe espacio
+  card.classList.add("aparecer");
+
+  // Paso 2: en el siguiente frame aplicar la clase de animación
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      card.classList.add("visible");
+    });
+  });
 }
 
+function cancelarRegistro() {
+  const card = document.getElementById("cardRegistro");
+  const btn  = document.getElementById("btnCrearCuenta");
+
+  card.classList.remove("visible");
+
+  // Esperar que termine la animación para ocultar
+  setTimeout(() => {
+    card.classList.remove("aparecer");
+    btn.style.display = "block";
+  }, 300);
+
+  limpiarFormulario(["nombreReal", "nuevoUser", "nuevoPass", "codigo"]);
+}
+
+// ---- REGISTRO -----------------------------------------------
 async function registrar() {
-  const nombre = document.getElementById("nombreReal").value.trim();
-  const user   = document.getElementById("nuevoUser").value.trim();
-  const pass   = document.getElementById("nuevoPass").value;
-  const codigo = document.getElementById("codigo").value.trim();
+  const nombre  = document.getElementById("nombreReal").value.trim();
+  const cedula  = document.getElementById("nuevoUser").value.trim();
+  const pass    = document.getElementById("nuevoPass").value;
+  const codigo  = document.getElementById("codigo").value.trim();
+  const errorEl = document.getElementById("error");
+  errorEl.textContent = "";
 
-  if (!nombre || !user || !pass) {
-    alert("Completa todos los campos");
+  if (!nombre || !cedula || !pass) {
+    errorEl.textContent = "Completa todos los campos";
     return;
   }
-
+  if (!/^\d+$/.test(cedula)) {
+    errorEl.textContent = "La cédula solo debe contener números";
+    return;
+  }
   if (codigo !== "TDT2026") {
-    alert("Código empresa incorrecto");
+    errorEl.textContent = "Código empresa incorrecto";
     return;
   }
-
   if (new Date() > fechaLimite) {
-    alert("Registro cerrado");
+    errorEl.textContent = "Registro cerrado";
     return;
   }
 
-  // Verificar si el usuario ya existe
   const { data: existe } = await db
     .from("usuarios")
     .select("id")
-    .eq("user", user)
+    .eq("user", cedula)
     .single();
 
   if (existe) {
-    alert("Ese nombre de usuario ya está en uso");
+    errorEl.textContent = "Esa cédula ya está registrada";
     return;
   }
 
   const passHash = await hashPass(pass);
-
   const { error } = await db
     .from("usuarios")
-    .insert([{ nombre, user, pass: passHash, rol: "user" }]);
+    .insert([{ nombre, user: cedula, pass: passHash, rol: "user" }]);
 
   if (error) {
-    alert("Error al crear cuenta: " + error.message);
+    errorEl.textContent = "Error al crear cuenta: " + error.message;
     return;
   }
 
-  alert("✅ Cuenta creada correctamente. Ya puedes iniciar sesión.");
-  document.getElementById("registro").style.display = "none";
+  limpiarFormulario(["nombreReal", "nuevoUser", "nuevoPass", "codigo"]);
+  cancelarRegistro();
+  alert("✅ Cuenta creada. Ya puedes iniciar sesión.");
 }
 
-// --- LOGIN --------------------------------------------------
+// ---- LOGIN --------------------------------------------------
 async function login() {
-  const user = document.getElementById("user").value.trim();
-  const pass = document.getElementById("pass").value;
+  const cedula  = document.getElementById("user").value.trim();
+  const pass    = document.getElementById("pass").value;
   const errorEl = document.getElementById("error");
-  errorEl.innerText = "";
+  errorEl.textContent = "";
 
-  if (!user || !pass) {
-    errorEl.innerText = "Ingresa usuario y contraseña";
+  if (!cedula || !pass) {
+    errorEl.textContent = "Ingresa tu cédula y contraseña";
+    return;
+  }
+  if (!/^\d+$/.test(cedula)) {
+    errorEl.textContent = "La cédula solo debe contener números";
     return;
   }
 
   const passHash = await hashPass(pass);
-
   const { data, error } = await db
     .from("usuarios")
     .select("*")
-    .eq("user", user)
+    .eq("user", cedula)
     .eq("pass", passHash)
     .single();
 
   if (error || !data) {
-    errorEl.innerText = "Usuario o contraseña incorrectos";
+    errorEl.textContent = "Cédula o contraseña incorrectos";
+    document.getElementById("pass").value = "";
     return;
   }
 
@@ -120,15 +149,13 @@ async function login() {
   }));
   localStorage.setItem("rol", data.rol);
 
-  // Guardar notificaciones pendientes de ver
   await verificarNotificaciones(data.user);
-
+  limpiarFormulario(["user", "pass"]);
   window.location = data.rol === "admin" ? "admin.html" : "dashboard.html";
 }
 
-// --- NOTIFICACIONES AL LOGIN --------------------------------
+// ---- NOTIFICACIONES ----------------------------------------
 async function verificarNotificaciones(userId) {
-  // Buscar apuestas recién resueltas (ganadas o perdidas) que el usuario no ha visto
   const { data: apuestas } = await db
     .from("apuestas")
     .select("id, estado, puntos_ganados, partido_id, visto")
@@ -137,7 +164,20 @@ async function verificarNotificaciones(userId) {
     .eq("visto", false);
 
   if (!apuestas || apuestas.length === 0) return;
-
-  // Guardar en localStorage para mostrarlas en dashboard
   localStorage.setItem("notificaciones_pendientes", JSON.stringify(apuestas));
+}
+
+// ---- UTILIDADES --------------------------------------------
+function limpiarFormulario(ids) {
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+}
+
+function logout() {
+  localStorage.removeItem("usuario");
+  localStorage.removeItem("rol");
+  localStorage.removeItem("notificaciones_pendientes");
+  window.location = "index.html";
 }
