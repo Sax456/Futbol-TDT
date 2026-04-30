@@ -232,6 +232,16 @@
   font-size: 13px;
 }
 
+/* ← AGREGAR AQUÍ */
+.puntosPendientes {
+  background: #78350f;
+  color: #f59e0b;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .apuestaDetalles {
   display: flex;
   flex-direction: column;
