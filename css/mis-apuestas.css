@@ -157,6 +157,8 @@
   font-weight: bold;
   font-size: 14px;
   display: inline-block;
+  border-top-color: #78350f;
+  color: #f59e0b;
 }
 
 /* ---- RESPONSIVE ---- */
