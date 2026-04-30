@@ -72,6 +72,8 @@ function renderFormApuesta(partido, apuestaExistente, detalleExistente) {
     if (apuestaExistente) return renderApuestaRealizada(apuestaExistente, detalleExistente, partido);
     return `<div class="apuestaBloqueada">⏱ Partido iniciado — apuestas cerradas</div>`;
   }
+  // Si ya tiene apuesta guardada y el partido aún no inicia → mostrar resumen editable
+  if (apuestaExistente) return renderApuestaGuardada(apuestaExistente, detalleExistente, partido);
 
   const statsActuales = {};
   if (detalleExistente) detalleExistente.forEach(d => { statsActuales[d.tipo_stat] = d.valor_apostado; });
@@ -404,7 +406,14 @@ async function guardarApuestaCompleta(partidoId, equipo1, equipo2) {
     if (err3) throw err3;
 
     btn.textContent = "✅ Apuesta guardada";
-    setTimeout(() => { btn.disabled = false; btn.textContent = "💾 Guardar apuesta"; }, 2000);
+
+    setTimeout(() => {
+      const contenedor = document.getElementById(`apuestaForm-${partidoId}`);
+      if (contenedor) {
+        const apuestaFake = { estado: "pendiente", puntos_ganados: 0 };
+        contenedor.outerHTML = renderApuestaRealizada(apuestaFake, statsElegidos, { equipo1, equipo2 });
+      }
+    }, 800);
 
   } catch (err) {
     console.error(err);
@@ -415,11 +424,57 @@ async function guardarApuestaCompleta(partidoId, equipo1, equipo2) {
 }
 
 // ============================================================
+// APUESTA GUARDADA (partido aún no iniciado — editable)
+// ============================================================
+function renderApuestaGuardada(apuesta, detalle, partido) {
+  const LABELS_VALOR = {
+    mas3: "Más de 3", mas5: "Más de 5", mas6: "Más de 6", mas8: "Más de 8",
+    cero: "0 corners", mas10: "Más de 10", mas12: "Más de 12", mas16: "Más de 16"
+  };
+  const LABELS_TIPO = {
+    resultado: "⚽ Resultado", marcador: "🎯 Marcador exacto",
+    amarillas: "🟨 Amarillas", rojas: "🟥 Rojas", corners: "🚩 Corners"
+  };
+
+  const puntosPosibles = (detalle || []).reduce((acc, d) => {
+    if (d.tipo_stat === "resultado") return acc + 2;
+    if (d.tipo_stat === "marcador")  return acc + 3;
+    if (d.tipo_stat === "rojas")     return acc + 4;
+    if (d.tipo_stat === "amarillas") return acc + ({ mas3:1, mas5:2, mas6:3, mas8:4 }[d.valor_apostado] || 0);
+    if (d.tipo_stat === "corners")   return acc + ({ cero:5, mas10:1, mas12:2, mas16:3 }[d.valor_apostado] || 0);
+    return acc;
+  }, 0);
+
+  const detalleHtml = (detalle || []).map(d => `
+    <div class="detalleItem">
+      <span>${LABELS_TIPO[d.tipo_stat] || d.tipo_stat}</span>
+      <span class="detalleValor">${LABELS_VALOR[d.valor_apostado] || d.valor_apostado}</span>
+    </div>`).join("");
+
+  return `
+    <div class="apuestaRealizada pendiente">
+      <div class="apuestaEstado">⏳ Pendiente
+        <span class="puntosPendientes">⭐ ${puntosPosibles} pts en juego</span>
+      </div>
+      <div class="apuestaDetalles">${detalleHtml}</div>
+    </div>`;
+}
+
+// ============================================================
 // APUESTA YA REALIZADA
 // ============================================================
 function renderApuestaRealizada(apuesta, detalle, partido) {
   const estadoClass = apuesta.estado === "ganada" ? "ganada" : apuesta.estado === "perdida" ? "perdida" : "pendiente";
   const estadoLabel = apuesta.estado === "ganada" ? "✅ Ganada" : apuesta.estado === "perdida" ? "❌ Perdida" : "⏳ Pendiente";
+
+  const puntosPosibles = (detalle || []).reduce((acc, d) => {
+    if (d.tipo_stat === "resultado") return acc + 2;
+    if (d.tipo_stat === "marcador")  return acc + 3;
+    if (d.tipo_stat === "rojas")     return acc + 4;
+    if (d.tipo_stat === "amarillas") return acc + ({ mas3:1, mas5:2, mas6:3, mas8:4 }[d.valor_apostado] || 0);
+    if (d.tipo_stat === "corners")   return acc + ({ cero:5, mas10:1, mas12:2, mas16:3 }[d.valor_apostado] || 0);
+    return acc;
+  }, 0);
 
   const LABELS_VALOR = {
     mas3: "Más de 3", mas5: "Más de 5", mas6: "Más de 6", mas8: "Más de 8",
@@ -441,6 +496,8 @@ function renderApuestaRealizada(apuesta, detalle, partido) {
       <div class="apuestaEstado">${estadoLabel}
         ${apuesta.estado === "ganada"
           ? `<span class="puntosGanados">+${apuesta.puntos_ganados} pts</span>`
+          : apuesta.estado === "pendiente"
+          ? `<span class="puntosPendientes">⭐ ${puntosPosibles} pts en juego</span>`
           : ""}
       </div>
       <div class="apuestaDetalles">${detalleHtml}</div>
