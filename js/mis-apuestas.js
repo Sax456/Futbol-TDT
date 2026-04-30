@@ -124,6 +124,17 @@ function renderApuestas(apuestas) {
           <div class="maPuntos">
             <span>⭐ +${a.puntos_ganados} puntos ganados</span>
           </div>
+        ` : a.estado === "pendiente" ? `
+          <div class="maPuntos pendiente">
+            <span>⭐ ${(a.apuestas_detalle || []).reduce((acc, d) => {
+              if (d.tipo_stat === "resultado") return acc + 2;
+              if (d.tipo_stat === "marcador")  return acc + 3;
+              if (d.tipo_stat === "rojas")     return acc + 4;
+              if (d.tipo_stat === "amarillas") return acc + ({ mas3:1, mas5:2, mas6:3, mas8:4 }[d.valor_apostado] || 0);
+              if (d.tipo_stat === "corners")   return acc + ({ cero:5, mas10:1, mas12:2, mas16:3 }[d.valor_apostado] || 0);
+              return acc;
+            }, 0)} pts en juego</span>
+          </div>
         ` : ""}
       </div>
     `;
