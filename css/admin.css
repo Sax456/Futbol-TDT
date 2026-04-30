@@ -296,3 +296,40 @@ font-size:100px;
 .posicion      { font-size: 22px; width: 50px; }
 .nombreJugador { color: white; font-weight: bold; font-size: 15px; }
 .puntosJugador { color: #ff7a00; font-weight: bold; font-size: 16px; text-align: right; }
+
+
+.grupoRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.grupoRow select {
+  flex: 1;
+}
+
+.btnCrearGrupo {
+  background: #1e293b;
+  color: #ff7a00;
+  border: 1px solid #ff7a00;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.btnCrearGrupo:hover {
+  background: #ff7a00;
+  color: white;
+}
+
+.formCrearGrupo {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
