@@ -161,7 +161,7 @@ function renderFormApuesta(partido, apuestaExistente, detalleExistente) {
       </div>
 
       <!-- MARCADOR EXACTO -->
-      <div class="statRow" id="rowMarcador-${partido.id}" style="${opacityMarcador}">
+       <div class="statRow" id="rowMarcador-${partido.id}" style="${esEmpateActual || !resultadoActual ? "opacity:0.4;pointer-events:none;" : ""}">
         <label class="statCheckLabel">
           <input type="checkbox" id="chk-marcador-${partido.id}"
             ${chkMarcador ? "checked" : ""}
@@ -258,10 +258,17 @@ function onResultadoChange(partidoId) {
     chkMarcador.checked = false;
     chkMarcador.disabled = true;
     areaMarcador.style.display = "none";
-  } else {
+  } else if (resultado) {
     rowMarcador.style.opacity = "1";
     rowMarcador.style.pointerEvents = "auto";
     chkMarcador.disabled = false;
+  } else {
+    // Se deseleccionó el resultado — bloquear marcador
+    rowMarcador.style.opacity = "0.4";
+    rowMarcador.style.pointerEvents = "none";
+    chkMarcador.checked = false;
+    chkMarcador.disabled = true;
+    document.getElementById(`area-marcador-${partidoId}`).style.display = "none";
   }
 
   document.querySelectorAll(`input[name="resultado-${partidoId}"]`).forEach(r => {
@@ -346,13 +353,21 @@ async function guardarApuestaCompleta(partidoId, equipo1, equipo2) {
   if (!usuario) { alert("Debes iniciar sesión"); return; }
 
   const resultadoRaw = document.querySelector(`input[name="resultado-${partidoId}"]:checked`)?.value;
-  if (!resultadoRaw) { alert("Selecciona el resultado del partido"); return; }
+
+  // Si no hay resultado seleccionado, el marcador exacto no tiene sentido
+  const chkMarcadorSinResultado = document.getElementById(`chk-marcador-${partidoId}`);
+  if (!resultadoRaw && chkMarcadorSinResultado?.checked) {
+    alert("Para apostar al marcador exacto debes seleccionar primero el resultado del partido");
+    return;
+  }
 
   const statsElegidos = [];
 
+if (resultadoRaw) {
   const valorResultado = resultadoRaw === "empate" ? "empate"
     : resultadoRaw === "equipo1" ? equipo1 : equipo2;
   statsElegidos.push({ tipo_stat: "resultado", valor_apostado: valorResultado });
+}
 
   const chkM = document.getElementById(`chk-marcador-${partidoId}`);
   if (chkM?.checked) {
@@ -383,6 +398,11 @@ async function guardarApuestaCompleta(partidoId, equipo1, equipo2) {
     if (!opCo) { alert("Selecciona una opción para corners"); return; }
     statsElegidos.push({ tipo_stat: "corners", valor_apostado: opCo });
   }
+
+  if (statsElegidos.length === 0) {
+  alert("Selecciona al menos un stat para apostar");
+  return;
+}
 
   const btn = document.querySelector(`#apuestaForm-${partidoId} .btnApostar`);
   btn.disabled = true;
