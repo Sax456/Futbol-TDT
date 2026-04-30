@@ -1,351 +1,172 @@
-// ============================================================
-// admin.js — Panel administrador TDT Mundial
-// ============================================================
+/* ============================================================
+   mis-apuestas.css — Estilos página mis apuestas TDT Mundial
+   ============================================================ */
 
-// Protección de ruta — verifica rol real desde localStorage
-const _usuarioAdmin = (() => {
-  try {
-    const raw = localStorage.getItem("usuario");
-    if (!raw) throw new Error("no session");
-    const u = JSON.parse(raw);
-    if (u.rol !== "admin") throw new Error("not admin");
-    return u;
-  } catch {
-    alert("Acceso denegado");
-    window.location.replace("index.html");
-    return null;
+.tituloMisApuestas {
+  padding: 0 20px;
+}
+
+/* ---- RESUMEN ---- */
+.resumenContainer {
+  display: flex;
+  gap: 16px;
+  padding: 0 40px 24px;
+  flex-wrap: wrap;
+}
+
+.resumenCard {
+  background: #0f172a;
+  border-radius: 12px;
+  border: 1px solid #1e293b;
+  padding: 20px 24px;
+  flex: 1;
+  min-width: 120px;
+  text-align: center;
+}
+
+.resumenCard.destacado {
+  border-color: #ff7a00;
+  background: #1c0d00;
+}
+
+.resumenIcon { font-size: 24px; margin-bottom: 6px; }
+.resumenNum  { font-size: 32px; font-weight: 800; color: white; font-family: 'Bebas Neue', sans-serif; }
+.resumenLabel { font-size: 12px; color: #64748b; margin-top: 4px; }
+
+/* ---- FILTROS ---- */
+.filtrosContainer {
+  display: flex;
+  gap: 10px;
+  padding: 0 40px 20px;
+  flex-wrap: wrap;
+}
+
+.filtroBtn {
+  background: #0f172a;
+  color: #94a3b8;
+  border: 1px solid #1e293b;
+  padding: 8px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: 'Montserrat', sans-serif;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+
+.filtroBtn:hover { border-color: #ff7a00; color: white; }
+.filtroBtn.activo {
+  background: #ff7a00;
+  color: white;
+  border-color: #ff7a00;
+  font-weight: bold;
+}
+
+/* ---- LISTA ---- */
+.misApuestasContainer {
+  padding: 0 40px 60px;
+}
+
+/* ---- CARD DE APUESTA ---- */
+.maCard {
+  background: #0f172a;
+  border-radius: 12px;
+  border-left: 4px solid #334155;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.maCard.ganada   { border-left-color: #16a34a; }
+.maCard.perdida  { border-left-color: #dc2626; }
+.maCard.pendiente { border-left-color: #f59e0b; }
+
+.maCardTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.maGrupo {
+  background: #1e293b;
+  color: #94a3b8;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.maFecha {
+  color: #64748b;
+  font-size: 12px;
+  flex: 1;
+  text-transform: capitalize;
+}
+
+.maEstadoBadge {
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+}
+.maEstadoBadge.ganada   { background: #052e16; color: #4ade80; }
+.maEstadoBadge.perdida  { background: #1c0a0a; color: #f87171; }
+.maEstadoBadge.pendiente { background: #1c1400; color: #fbbf24; }
+
+.maEquipos {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 14px;
+}
+
+.maVs {
+  color: #ff7a00;
+  font-size: 13px;
+}
+
+.maDetalles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.maDetalleItem {
+  background: #020617;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 6px 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.maDetalleTipo  { color: #94a3b8; }
+.maDetalleValor { color: white; font-weight: bold; }
+
+.maPuntos {
+  background: #052e16;
+  border: 1px solid #16a34a;
+  border-radius: 8px;
+  padding: 8px 14px;
+  color: #4ade80;
+  font-weight: bold;
+  font-size: 14px;
+  display: inline-block;
+  border-top-color: #78350f;
+  color: #f59e0b;
+}
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 768px) {
+  .resumenContainer, .filtrosContainer, .misApuestasContainer {
+    padding-left: 16px;
+    padding-right: 16px;
   }
-})();
-
-if (!_usuarioAdmin) throw new Error("stop");
-
-let partidosCache = [];
-let vistaActual = "partidos";
-
-// ============================================================
-// NAVEGACIÓN
-// ============================================================
-function mostrarSeccion(seccion) {
-  vistaActual = seccion;
-  document.querySelectorAll(".seccionPanel").forEach(s => s.style.display = "none");
-  document.querySelectorAll(".tabBtn").forEach(b => b.classList.remove("activo"));
-  document.getElementById("seccion-" + seccion).style.display = "block";
-  document.getElementById("tab-" + seccion).classList.add("activo");
-  if (seccion === "resultados") cargarPartidosResultados();
-  if (seccion === "ranking")    cargarRanking();
-  if (seccion === "partidos")   cargarPartidosAdmin();
-}
-
-// ============================================================
-// SECCIÓN: PARTIDOS
-// ============================================================
-async function cargarPartidosAdmin() {
-  const contenedor = document.getElementById("listaPartidos");
-  contenedor.innerHTML = "<p>Cargando...</p>";
-
-  const { data: partidos, error } = await db
-    .from("partidos")
-    .select("*, grupos(nombre)")
-    .order("fecha", { ascending: true });
-
-  if (error) {
-    contenedor.innerHTML = `<p style="color:red">Error: ${error.message}</p>`;
-    return;
-  }
-  partidosCache = partidos;
-  renderizarPartidos(partidos);
-}
-
-function renderizarPartidos(partidos) {
-  const contenedor  = document.getElementById("listaPartidos");
-  const filtroGrupo = document.getElementById("filtroGrupo").value;
-  const filtrados   = filtroGrupo ? partidos.filter(p => p.grupo_id == filtroGrupo) : partidos;
-
-  if (filtrados.length === 0) { contenedor.innerHTML = "<p>No hay partidos.</p>"; return; }
-
-  const porMes = {};
-  for (const p of filtrados) {
-    const mes = p.fecha
-      ? new Date(p.fecha).toLocaleString("es-CO", { month: "long", year: "numeric" })
-      : "Sin fecha";
-    if (!porMes[mes]) porMes[mes] = [];
-    porMes[mes].push(p);
-  }
-
-  let html = "";
-  for (const [mes, lista] of Object.entries(porMes)) {
-    html += `<h3 class="mesHeader">${mes.charAt(0).toUpperCase() + mes.slice(1)}</h3>`;
-    for (const p of lista) {
-      const esPorDefinir = p.equipo1 === "Por definir" || p.equipo2 === "Por definir";
-      const fechaFormateada = p.fecha
-        ? new Date(p.fecha).toLocaleString("es-CO", {
-            weekday: "short", day: "2-digit", month: "short",
-            hour: "2-digit", minute: "2-digit"
-          })
-        : "Sin fecha";
-
-      html += `
-        <div class="adminCard ${esPorDefinir ? "pendiente" : ""}">
-          <div class="adminCardTop">
-            <span class="grupoTag">${p.grupos?.nombre || "Grupo ?"}</span>
-            <span class="fechaTag">${fechaFormateada}</span>
-            ${esPorDefinir ? '<span class="pendienteTag">⚠ Por definir</span>' : ""}
-          </div>
-          <div class="adminCardBody">
-            <input class="inputEquipo" id="e1-${p.id}" value="${p.equipo1}" placeholder="Equipo 1" />
-            <span class="vsLabel">vs</span>
-            <input class="inputEquipo" id="e2-${p.id}" value="${p.equipo2}" placeholder="Equipo 2" />
-            <input class="inputFecha" type="datetime-local" id="f-${p.id}"
-              value="${p.fecha ? toDatetimeLocal(p.fecha) : ""}" />
-            <button class="btnGuardar"  onclick="guardarPartido(${p.id})">💾 Guardar</button>
-            <button class="btnEliminar" onclick="eliminarPartido(${p.id})">🗑 Eliminar</button>
-          </div>
-        </div>
-      `;
-    }
-  }
-  contenedor.innerHTML = html;
-}
-
-function filtrarPartidos() {
-  renderizarPartidos(partidosCache);
-}
-
-function toDatetimeLocal(isoString) {
-  const d = new Date(isoString);
-  d.setMinutes(d.getMinutes() - 300); // UTC → Colombia (UTC-5)
-  return d.toISOString().slice(0, 16);
-}
-
-async function guardarPartido(id) {
-  const equipo1 = document.getElementById(`e1-${id}`).value.trim();
-  const equipo2 = document.getElementById(`e2-${id}`).value.trim();
-  const fechaRaw = document.getElementById(`f-${id}`).value;
-
-  if (!equipo1 || !equipo2) { alert("Completa los nombres de los equipos"); return; }
-
-  const fecha = fechaRaw ? fechaRaw + ":00-05:00" : null;
-
-  const { error } = await db
-    .from("partidos")
-    .update({ equipo1, equipo2, fecha })
-    .eq("id", id);
-
-  if (error) { alert("Error: " + error.message); return; }
-  alert("✅ Partido guardado");
-  cargarPartidosAdmin();
-}
-
-async function eliminarPartido(id) {
-  if (!confirm("¿Eliminar este partido y todas sus apuestas?")) return;
-
-  // Buscar apuestas del partido
-  const { data: apuestas } = await db
-    .from("apuestas")
-    .select("id")
-    .eq("partido_id", id);
-
-  if (apuestas && apuestas.length > 0) {
-    const apuestaIds = apuestas.map(a => a.id);
-    await db.from("apuestas_detalle").delete().in("apuesta_id", apuestaIds);
-    await db.from("apuestas").delete().in("id", apuestaIds);
-  }
-
-  await db.from("resultados").delete().eq("partido_id", id);
-  const { error } = await db.from("partidos").delete().eq("id", id);
-
-  if (error) { alert("Error al eliminar: " + error.message); return; }
-  alert("✅ Partido eliminado");
-  cargarPartidosAdmin();
-}
-
-async function agregarPartido() {
-  const grupoId = document.getElementById("nuevoGrupo").value;
-  const equipo1 = document.getElementById("nuevoE1").value.trim();
-  const equipo2 = document.getElementById("nuevoE2").value.trim();
-  const fechaRaw = document.getElementById("nuevoFecha").value;
-
-  if (!grupoId) { alert("Selecciona un grupo"); return; }
-  if (!equipo1 || !equipo2) { alert("Ingresa los nombres de los equipos"); return; }
-
-  const fecha = fechaRaw ? fechaRaw + ":00-05:00" : null;
-
-  const { error } = await db
-    .from("partidos")
-    .insert([{ equipo1, equipo2, grupo_id: parseInt(grupoId), fecha }]);
-
-  if (error) { alert("Error: " + error.message); return; }
-
-  cancelarNuevo();
-  alert("✅ Partido creado");
-  cargarPartidosAdmin();
-}
-
-// ============================================================
-// SECCIÓN: RESULTADOS
-// ============================================================
-async function cargarPartidosResultados() {
-  const contenedor = document.getElementById("listaResultados");
-  contenedor.innerHTML = "<p>Cargando...</p>";
-
-  const ahora = new Date().toISOString();
-
-  const { data: partidos, error } = await db
-    .from("partidos")
-    .select("*, grupos(nombre)")
-    .lte("fecha", ahora)
-    .order("fecha", { ascending: false });
-
-  if (error) { contenedor.innerHTML = `<p style="color:red">Error: ${error.message}</p>`; return; }
-
-  const { data: resultados } = await db.from("resultados").select("*");
-  const resMap = {};
-  (resultados || []).forEach(r => { resMap[r.partido_id] = r; });
-
-  if (!partidos || partidos.length === 0) {
-    contenedor.innerHTML = "<p>No hay partidos iniciados aún.</p>";
-    return;
-  }
-
-  let html = "";
-  for (const p of partidos) {
-    const res = resMap[p.id];
-    html += `
-      <div class="resultadoCard ${res ? "conResultado" : ""}">
-        <div class="resultadoTop">
-          <span class="grupoTag">${p.grupos?.nombre || "?"}</span>
-          <span class="fechaTag">${new Date(p.fecha).toLocaleString("es-CO", {
-            day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
-          })}</span>
-          ${res ? '<span class="tagCompletado">✅ Ingresado</span>' : ""}
-        </div>
-        <div class="resultadoEquipos">
-          <strong>${p.equipo1}</strong>
-          <span class="vsLabel">vs</span>
-          <strong>${p.equipo2}</strong>
-        </div>
-        <div class="resultadoInputs">
-          <div class="inputGrupo">
-            <label>Goles ${p.equipo1}</label>
-            <input type="number" min="0" id="g1-${p.id}" value="${res?.goles1 ?? ""}" placeholder="0" />
-          </div>
-          <div class="inputGrupo">
-            <label>Goles ${p.equipo2}</label>
-            <input type="number" min="0" id="g2-${p.id}" value="${res?.goles2 ?? ""}" placeholder="0" />
-          </div>
-          <div class="inputGrupo">
-            <label>🟨 Amarillas</label>
-            <input type="number" min="0" id="am-${p.id}" value="${res?.amarillas ?? ""}" placeholder="0" />
-          </div>
-          <div class="inputGrupo">
-            <label>🟥 Rojas</label>
-            <input type="number" min="0" id="ro-${p.id}" value="${res?.rojas ?? ""}" placeholder="0" />
-          </div>
-          <div class="inputGrupo">
-            <label>🚩 Corners</label>
-            <input type="number" min="0" id="co-${p.id}" value="${res?.corners ?? ""}" placeholder="0" />
-          </div>
-          <button class="btnGuardar" onclick="guardarResultado(${p.id}, '${p.equipo1}', '${p.equipo2}')">
-            💾 Guardar resultado
-          </button>
-        </div>
-      </div>
-    `;
-  }
-  contenedor.innerHTML = html;
-}
-
-async function guardarResultado(partidoId, equipo1, equipo2) {
-  const goles1    = document.getElementById(`g1-${partidoId}`).value;
-  const goles2    = document.getElementById(`g2-${partidoId}`).value;
-  const amarillas = document.getElementById(`am-${partidoId}`).value;
-  const rojas     = document.getElementById(`ro-${partidoId}`).value;
-  const corners   = document.getElementById(`co-${partidoId}`).value;
-
-  if (goles1 === "" || goles2 === "") { alert("Ingresa los goles de ambos equipos"); return; }
-
-  const { error } = await db
-    .from("resultados")
-    .upsert({
-      partido_id: partidoId,
-      goles1    : parseInt(goles1),
-      goles2    : parseInt(goles2),
-      amarillas : amarillas !== "" ? parseInt(amarillas) : null,
-      rojas     : rojas     !== "" ? parseInt(rojas)     : null,
-      corners   : corners   !== "" ? parseInt(corners)   : null,
-      ingresado_en: new Date().toISOString()
-    }, { onConflict: "partido_id" });
-
-  if (error) { alert("Error al guardar: " + error.message); return; }
-
-  // Recalcular puntos (también corrige apuestas ya procesadas)
-  await calcularPuntosPartido(partidoId, { equipo1, equipo2, goles1, goles2, amarillas, rojas, corners });
-
-  alert("✅ Resultado guardado y puntos actualizados");
-  cargarPartidosResultados();
-}
-
-// ============================================================
-// SECCIÓN: RANKING
-// ============================================================
-async function cargarRanking() {
-  const contenedor = document.getElementById("tablaRanking");
-  contenedor.innerHTML = "<p>Calculando...</p>";
-
-  const { data: apuestas, error } = await db
-    .from("apuestas")
-    .select("usuario_id, puntos_ganados")
-    .eq("estado", "ganada");
-
-  const { data: usuarios } = await db.from("usuarios").select("user, nombre");
-
-  if (error || !usuarios) { contenedor.innerHTML = "<p>Error cargando ranking</p>"; return; }
-
-  const puntosMap = {};
-  (apuestas || []).forEach(a => {
-    puntosMap[a.usuario_id] = (puntosMap[a.usuario_id] || 0) + (a.puntos_ganados || 0);
-  });
-
-  const ranking = usuarios
-    .filter(u => u.rol !== "admin")
-    .map(u => ({ nombre: u.nombre, user: u.user, puntos: puntosMap[u.user] || 0 }))
-    .sort((a, b) => b.puntos - a.puntos);
-
-  const medallas = ["🥇", "🥈", "🥉"];
-
-  let html = `
-    <table class="rankingTable">
-      <thead>
-        <tr><th>#</th><th>Usuario</th><th>Puntos</th></tr>
-      </thead>
-      <tbody>
-  `;
-  ranking.forEach((r, i) => {
-    html += `
-      <tr class="${i < 3 ? "top3" : ""}">
-        <td>${medallas[i] || (i + 1)}</td>
-        <td>${r.nombre}</td>
-        <td class="puntosCell">⭐ ${r.puntos}</td>
-      </tr>
-    `;
-  });
-  html += "</tbody></table>";
-  contenedor.innerHTML = html;
-}
-
-// Iniciar en la sección de partidos
-cargarPartidosAdmin();
-
-function mostrarFormNuevo() {
-  document.getElementById("formNuevo").style.display = "block";
-  document.getElementById("btnMostrarForm").style.display = "none";
-}
-
-function cancelarNuevo() {
-  document.getElementById("formNuevo").style.display = "none";
-  document.getElementById("btnMostrarForm").style.display = "block";
-  document.getElementById("nuevoGrupo").value = "";
-  document.getElementById("nuevoE1").value = "";
-  document.getElementById("nuevoE2").value = "";
-  document.getElementById("nuevoFecha").value = "";
+  .resumenCard { min-width: calc(50% - 8px); }
+  .maEquipos   { font-size: 14px; }
 }
