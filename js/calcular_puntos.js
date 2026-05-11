@@ -3,9 +3,10 @@
 // ============================================================
 
 const PUNTOS_FIJOS = {
-  resultado: 2,
-  marcador : 3,
-  rojas    : 4
+  resultado   : 2,
+  marcador    : 3,
+  rojas       : 4,
+  ambosmarcan : 2
 };
 
 const PUNTOS_AMARILLAS = {
@@ -48,7 +49,7 @@ async function calcularPuntosPartido(partidoId, resultado) {
 
     for (const detalle of detalles) {
       const { acerto, puntos } = verificarStat(detalle, {
-        ganador, esEmpate, marcador, amarillas, rojas, corners
+        ganador, esEmpate, marcador, amarillas, rojas, corners, goles1, goles2
       });
 
       if (acerto) {
@@ -75,23 +76,30 @@ function verificarStat(detalle, real) {
   switch (detalle.tipo_stat) {
 
     case "resultado":
-      if (val === "empate") return { acerto: real.esEmpate,                           puntos: PUNTOS_FIJOS.resultado };
-      return { acerto: !real.esEmpate && val === real.ganador,                         puntos: PUNTOS_FIJOS.resultado };
+      if (val === "empate") return { acerto: real.esEmpate,                        puntos: PUNTOS_FIJOS.resultado };
+      return { acerto: !real.esEmpate && val === real.ganador,                      puntos: PUNTOS_FIJOS.resultado };
 
     case "marcador":
-      return { acerto: val === real.marcador,                                          puntos: PUNTOS_FIJOS.marcador };
+      return { acerto: val === real.marcador,                                       puntos: PUNTOS_FIJOS.marcador };
 
     case "rojas":
-      return { acerto: parseInt(val) === real.rojas,                                   puntos: PUNTOS_FIJOS.rojas };
+      return { acerto: parseInt(val) === real.rojas,                                puntos: PUNTOS_FIJOS.rojas };
 
-    case "amarillas":
+    case "ambosmarcan": {
+      const ambosMarcan = real.goles1 > 0 && real.goles2 > 0;
+      return { acerto: (val === "si") === ambosMarcan,                              puntos: PUNTOS_FIJOS.ambosmarcan };
+    }
+
+    case "amarillas": {
       const umbralAm = { mas3: 3, mas5: 5, mas6: 6, mas8: 8 }[val];
-      return { acerto: umbralAm !== undefined && real.amarillas > umbralAm,            puntos: PUNTOS_AMARILLAS[val] || 0 };
+      return { acerto: umbralAm !== undefined && real.amarillas > umbralAm,         puntos: PUNTOS_AMARILLAS[val] || 0 };
+    }
 
-    case "corners":
-      if (val === "cero")  return { acerto: real.corners === 0,                        puntos: PUNTOS_CORNERS.cero };
+    case "corners": {
+      if (val === "cero") return { acerto: real.corners === 0,                      puntos: PUNTOS_CORNERS.cero };
       const umbralCo = { mas10: 10, mas12: 12, mas16: 16 }[val];
-      return { acerto: umbralCo !== undefined && real.corners > umbralCo,             puntos: PUNTOS_CORNERS[val] || 0 };
+      return { acerto: umbralCo !== undefined && real.corners > umbralCo,           puntos: PUNTOS_CORNERS[val] || 0 };
+    }
 
     default:
       return { acerto: false, puntos: 0 };
