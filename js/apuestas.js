@@ -2,9 +2,10 @@
 // apuestas.js — Lógica de apuestas combinadas TDT Mundial
 // ============================================================
 
-const PUNTOS_RESULTADO = 2;
-const PUNTOS_MARCADOR  = 3;
-const PUNTOS_ROJAS     = 4;
+const PUNTOS_RESULTADO    = 2;
+const PUNTOS_MARCADOR     = 3;
+const PUNTOS_ROJAS        = 4;
+const PUNTOS_AMBOS_MARCAN = 2;
 
 const OPCIONES_AMARILLAS = [
   { valor: "mas3", label: "Más de 3",  pts: 1 },
@@ -20,7 +21,6 @@ const OPCIONES_CORNERS = [
   { valor: "mas16", label: "Más de 16", pts: 3 },
 ];
 
-// Guarda qué estaba seleccionado ANTES del click para poder deseleccionar
 let _radioAntes = {};
 
 function recordarRadio(tipo, partidoId) {
@@ -72,25 +72,25 @@ function renderFormApuesta(partido, apuestaExistente, detalleExistente) {
     if (apuestaExistente) return renderApuestaRealizada(apuestaExistente, detalleExistente, partido);
     return `<div class="apuestaBloqueada">⏱ Partido iniciado — apuestas cerradas</div>`;
   }
-  // Si ya tiene apuesta guardada y el partido aún no inicia → mostrar resumen editable
   if (apuestaExistente) return renderApuestaGuardada(apuestaExistente, detalleExistente, partido);
 
   const statsActuales = {};
   if (detalleExistente) detalleExistente.forEach(d => { statsActuales[d.tipo_stat] = d.valor_apostado; });
 
-  const resultadoActual = statsActuales["resultado"] || "";
-  const marcadorActual  = statsActuales["marcador"]  || "";
-  const [mg1, mg2]      = marcadorActual ? marcadorActual.split("-") : ["", ""];
-  const amarillaActual  = statsActuales["amarillas"] || "";
-  const rojaActual      = statsActuales["rojas"]     || "";
-  const cornerActual    = statsActuales["corners"]   || "";
+  const resultadoActual    = statsActuales["resultado"]    || "";
+  const marcadorActual     = statsActuales["marcador"]     || "";
+  const [mg1, mg2]         = marcadorActual ? marcadorActual.split("-") : ["", ""];
+  const amarillaActual     = statsActuales["amarillas"]    || "";
+  const rojaActual         = statsActuales["rojas"]        || "";
+  const cornerActual       = statsActuales["corners"]      || "";
+  const ambosMarcanActual  = statsActuales["ambosmarcan"]  || "";
 
-  const chkMarcador  = !!statsActuales["marcador"];
-  const chkAmarillas = !!statsActuales["amarillas"];
-  const chkRojas     = !!statsActuales["rojas"];
-  const chkCorners   = !!statsActuales["corners"];
+  const chkMarcador     = !!statsActuales["marcador"];
+  const chkAmarillas    = !!statsActuales["amarillas"];
+  const chkRojas        = !!statsActuales["rojas"];
+  const chkCorners      = !!statsActuales["corners"];
+  const chkAmbosMarcan  = !!statsActuales["ambosmarcan"];
 
-  // Radio buttons amarillas
   const radiosAmarillas = OPCIONES_AMARILLAS.map(op => {
     const sel = amarillaActual === op.valor ? "seleccionada" : "";
     const chk = amarillaActual === op.valor ? "checked" : "";
@@ -103,7 +103,6 @@ function renderFormApuesta(partido, apuestaExistente, detalleExistente) {
       </label>`;
   }).join("");
 
-  // Radio buttons corners
   const radiosCorners = OPCIONES_CORNERS.map(op => {
     const sel = cornerActual === op.valor ? "seleccionada" : "";
     const chk = cornerActual === op.valor ? "checked" : "";
@@ -117,7 +116,6 @@ function renderFormApuesta(partido, apuestaExistente, detalleExistente) {
   }).join("");
 
   const esEmpateActual = resultadoActual === "empate";
-  const opacityMarcador = esEmpateActual ? "opacity:0.4;pointer-events:none;" : "";
 
   return `
     <div class="apuestaForm" id="apuestaForm-${partido.id}">
@@ -161,7 +159,7 @@ function renderFormApuesta(partido, apuestaExistente, detalleExistente) {
       </div>
 
       <!-- MARCADOR EXACTO -->
-       <div class="statRow" id="rowMarcador-${partido.id}" style="${esEmpateActual || !resultadoActual ? "opacity:0.4;pointer-events:none;" : ""}">
+      <div class="statRow" id="rowMarcador-${partido.id}" style="${esEmpateActual || !resultadoActual ? "opacity:0.4;pointer-events:none;" : ""}">
         <label class="statCheckLabel">
           <input type="checkbox" id="chk-marcador-${partido.id}"
             ${chkMarcador ? "checked" : ""}
@@ -182,6 +180,36 @@ function renderFormApuesta(partido, apuestaExistente, detalleExistente) {
               onchange="validarMarcador(${partido.id})" />
           </div>
           <span class="marcadorError" id="errorMarcador-${partido.id}"></span>
+        </div>
+      </div>
+
+      <!-- AMBOS MARCAN -->
+      <div class="statRow">
+        <label class="statCheckLabel">
+          <input type="checkbox" id="chk-ambosmarcan-${partido.id}"
+            ${chkAmbosMarcan ? "checked" : ""}
+            onchange="toggleStat('ambosmarcan', ${partido.id})" />
+          <span class="statNombre">⚽⚽ Ambos equipos marcan</span>
+          <span class="statPts">+${PUNTOS_AMBOS_MARCAN} pts</span>
+        </label>
+        <div class="statInputArea opcionesWrap" id="area-ambosmarcan-${partido.id}"
+          style="display:${chkAmbosMarcan ? "flex" : "none"}">
+          <label class="radioOpcion ${ambosMarcanActual === "si" ? "seleccionada" : ""}"
+            onmousedown="recordarRadio('ambosmarcan', ${partido.id})">
+            <input type="radio" name="ambosmarcan-${partido.id}" value="si"
+              ${ambosMarcanActual === "si" ? "checked" : ""}
+              onclick="toggleRadio('ambosmarcan', ${partido.id}, 'si')"
+              onchange="onRadioChange('ambosmarcan', ${partido.id})" />
+            Sí <span class="opcionPts">+2pts</span>
+          </label>
+          <label class="radioOpcion ${ambosMarcanActual === "no" ? "seleccionada" : ""}"
+            onmousedown="recordarRadio('ambosmarcan', ${partido.id})">
+            <input type="radio" name="ambosmarcan-${partido.id}" value="no"
+              ${ambosMarcanActual === "no" ? "checked" : ""}
+              onclick="toggleRadio('ambosmarcan', ${partido.id}, 'no')"
+              onchange="onRadioChange('ambosmarcan', ${partido.id})" />
+            No <span class="opcionPts">+2pts</span>
+          </label>
         </div>
       </div>
 
@@ -263,12 +291,11 @@ function onResultadoChange(partidoId) {
     rowMarcador.style.pointerEvents = "auto";
     chkMarcador.disabled = false;
   } else {
-    // Se deseleccionó el resultado — bloquear marcador
     rowMarcador.style.opacity = "0.4";
     rowMarcador.style.pointerEvents = "none";
     chkMarcador.checked = false;
     chkMarcador.disabled = true;
-    document.getElementById(`area-marcador-${partidoId}`).style.display = "none";
+    areaMarcador.style.display = "none";
   }
 
   document.querySelectorAll(`input[name="resultado-${partidoId}"]`).forEach(r => {
@@ -327,6 +354,11 @@ function calcularPuntosPreview(partidoId) {
   const chkM = document.getElementById(`chk-marcador-${partidoId}`);
   if (chkM?.checked) pts += PUNTOS_MARCADOR;
 
+  const chkAM = document.getElementById(`chk-ambosmarcan-${partidoId}`);
+  if (chkAM?.checked && document.querySelector(`input[name="ambosmarcan-${partidoId}"]:checked`)) {
+    pts += PUNTOS_AMBOS_MARCAN;
+  }
+
   const chkA = document.getElementById(`chk-amarillas-${partidoId}`);
   if (chkA?.checked) {
     const op = OPCIONES_AMARILLAS.find(o => o.valor === document.querySelector(`input[name="amarillas-${partidoId}"]:checked`)?.value);
@@ -354,7 +386,6 @@ async function guardarApuestaCompleta(partidoId, equipo1, equipo2) {
 
   const resultadoRaw = document.querySelector(`input[name="resultado-${partidoId}"]:checked`)?.value;
 
-  // Si no hay resultado seleccionado, el marcador exacto no tiene sentido
   const chkMarcadorSinResultado = document.getElementById(`chk-marcador-${partidoId}`);
   if (!resultadoRaw && chkMarcadorSinResultado?.checked) {
     alert("Para apostar al marcador exacto debes seleccionar primero el resultado del partido");
@@ -363,11 +394,11 @@ async function guardarApuestaCompleta(partidoId, equipo1, equipo2) {
 
   const statsElegidos = [];
 
-if (resultadoRaw) {
-  const valorResultado = resultadoRaw === "empate" ? "empate"
-    : resultadoRaw === "equipo1" ? equipo1 : equipo2;
-  statsElegidos.push({ tipo_stat: "resultado", valor_apostado: valorResultado });
-}
+  if (resultadoRaw) {
+    const valorResultado = resultadoRaw === "empate" ? "empate"
+      : resultadoRaw === "equipo1" ? equipo1 : equipo2;
+    statsElegidos.push({ tipo_stat: "resultado", valor_apostado: valorResultado });
+  }
 
   const chkM = document.getElementById(`chk-marcador-${partidoId}`);
   if (chkM?.checked) {
@@ -376,6 +407,13 @@ if (resultadoRaw) {
     const g2 = document.getElementById(`stat-marcador-${partidoId}-g2`)?.value;
     if (g1 === "" || g2 === "") { alert("Ingresa el marcador completo"); return; }
     statsElegidos.push({ tipo_stat: "marcador", valor_apostado: `${g1}-${g2}` });
+  }
+
+  const chkAM = document.getElementById(`chk-ambosmarcan-${partidoId}`);
+  if (chkAM?.checked) {
+    const opAM = document.querySelector(`input[name="ambosmarcan-${partidoId}"]:checked`)?.value;
+    if (!opAM) { alert("Selecciona Sí o No para ambos marcan"); return; }
+    statsElegidos.push({ tipo_stat: "ambosmarcan", valor_apostado: opAM });
   }
 
   const chkA = document.getElementById(`chk-amarillas-${partidoId}`);
@@ -400,9 +438,9 @@ if (resultadoRaw) {
   }
 
   if (statsElegidos.length === 0) {
-  alert("Selecciona al menos un stat para apostar");
-  return;
-}
+    alert("Selecciona al menos un stat para apostar");
+    return;
+  }
 
   const btn = document.querySelector(`#apuestaForm-${partidoId} .btnApostar`);
   btn.disabled = true;
@@ -444,24 +482,27 @@ if (resultadoRaw) {
 }
 
 // ============================================================
-// APUESTA GUARDADA (partido aún no iniciado — editable)
+// APUESTA GUARDADA (partido aún no iniciado)
 // ============================================================
 function renderApuestaGuardada(apuesta, detalle, partido) {
   const LABELS_VALOR = {
     mas3: "Más de 3", mas5: "Más de 5", mas6: "Más de 6", mas8: "Más de 8",
-    cero: "0 corners", mas10: "Más de 10", mas12: "Más de 12", mas16: "Más de 16"
+    cero: "0 corners", mas10: "Más de 10", mas12: "Más de 12", mas16: "Más de 16",
+    si: "Sí", no: "No"
   };
   const LABELS_TIPO = {
     resultado: "⚽ Resultado", marcador: "🎯 Marcador exacto",
+    ambosmarcan: "⚽⚽ Ambos marcan",
     amarillas: "🟨 Amarillas", rojas: "🟥 Rojas", corners: "🚩 Corners"
   };
 
   const puntosPosibles = (detalle || []).reduce((acc, d) => {
-    if (d.tipo_stat === "resultado") return acc + 2;
-    if (d.tipo_stat === "marcador")  return acc + 3;
-    if (d.tipo_stat === "rojas")     return acc + 4;
-    if (d.tipo_stat === "amarillas") return acc + ({ mas3:1, mas5:2, mas6:3, mas8:4 }[d.valor_apostado] || 0);
-    if (d.tipo_stat === "corners")   return acc + ({ cero:5, mas10:1, mas12:2, mas16:3 }[d.valor_apostado] || 0);
+    if (d.tipo_stat === "resultado")   return acc + 2;
+    if (d.tipo_stat === "marcador")    return acc + 3;
+    if (d.tipo_stat === "rojas")       return acc + 4;
+    if (d.tipo_stat === "ambosmarcan") return acc + 2;
+    if (d.tipo_stat === "amarillas")   return acc + ({ mas3:1, mas5:2, mas6:3, mas8:4 }[d.valor_apostado] || 0);
+    if (d.tipo_stat === "corners")     return acc + ({ cero:5, mas10:1, mas12:2, mas16:3 }[d.valor_apostado] || 0);
     return acc;
   }, 0);
 
@@ -488,20 +529,23 @@ function renderApuestaRealizada(apuesta, detalle, partido) {
   const estadoLabel = apuesta.estado === "ganada" ? "✅ Ganada" : apuesta.estado === "perdida" ? "❌ Perdida" : "⏳ Pendiente";
 
   const puntosPosibles = (detalle || []).reduce((acc, d) => {
-    if (d.tipo_stat === "resultado") return acc + 2;
-    if (d.tipo_stat === "marcador")  return acc + 3;
-    if (d.tipo_stat === "rojas")     return acc + 4;
-    if (d.tipo_stat === "amarillas") return acc + ({ mas3:1, mas5:2, mas6:3, mas8:4 }[d.valor_apostado] || 0);
-    if (d.tipo_stat === "corners")   return acc + ({ cero:5, mas10:1, mas12:2, mas16:3 }[d.valor_apostado] || 0);
+    if (d.tipo_stat === "resultado")   return acc + 2;
+    if (d.tipo_stat === "marcador")    return acc + 3;
+    if (d.tipo_stat === "rojas")       return acc + 4;
+    if (d.tipo_stat === "ambosmarcan") return acc + 2;
+    if (d.tipo_stat === "amarillas")   return acc + ({ mas3:1, mas5:2, mas6:3, mas8:4 }[d.valor_apostado] || 0);
+    if (d.tipo_stat === "corners")     return acc + ({ cero:5, mas10:1, mas12:2, mas16:3 }[d.valor_apostado] || 0);
     return acc;
   }, 0);
 
   const LABELS_VALOR = {
     mas3: "Más de 3", mas5: "Más de 5", mas6: "Más de 6", mas8: "Más de 8",
-    cero: "0 corners", mas10: "Más de 10", mas12: "Más de 12", mas16: "Más de 16"
+    cero: "0 corners", mas10: "Más de 10", mas12: "Más de 12", mas16: "Más de 16",
+    si: "Sí", no: "No"
   };
   const LABELS_TIPO = {
     resultado: "⚽ Resultado", marcador: "🎯 Marcador exacto",
+    ambosmarcan: "⚽⚽ Ambos marcan",
     amarillas: "🟨 Amarillas", rojas: "🟥 Rojas", corners: "🚩 Corners"
   };
 
