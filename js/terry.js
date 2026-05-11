@@ -2,6 +2,8 @@
 // terry.js — Chatbot TDT Mundial
 // ============================================================
 
+const GROQ_API_KEY = "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"; // 👈 Pon tu key de console.groq.com
+
 (function () {
   // ── Inyectar estilos ──────────────────────────────────────
   const style = document.createElement("style");
@@ -406,41 +408,73 @@
   sendBtn.disabled = true;
   showTyping();
 
-  const lower = q.toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // quita tildes
+  const lower = q.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-  let response = "";
-
+  // ── Easter eggs ──------------------------------------------------------------------------------------------------------
+  if (/tdt/i.test(lower)) {
+    addMsgAndReset(`¡GOL GOL GOL! 🎉<br><br><img src="IMG/vannier.jpeg" style="width:60%;border-radius:12px;margin-top:6px;"/>`);
+    return;
+  }
+  if (/y yo/i.test(lower)) {
+    addMsgAndReset(`¡Bien! 👍<br><br><img src="IMG/Mauricio.jpeg" style="width:60%;border-radius:12px;margin-top:6px;"/>`);
+    return;
+  }
+  
   try {
+    let datosHTML = null;
+    let intro     = "";
+
     if (/hoy|esta noche|esta tarde|juegan hoy|hay hoy/.test(lower)) {
-      response = await getPartidosHoy();
+      datosHTML = await getPartidosHoy();
+      intro     = "📅 Aquí están los partidos de hoy:";
     } else if (/proxim|siguient|despues|manana|semana|cuando jueg|agenda|programac|que hay/.test(lower)) {
-      response = await getProximos();
-    } else if (/mis apuesta|como voy|aposté|aposte|apueste|mis result|cuantas gane|cuantas perd/.test(lower)) {
-      response = await getMisApuestas();
-    } else if (/mi ranking|mi posicion|cuanto(s)? punto|mis punto|donde voy|puesto|tabla|clasificac/.test(lower)) {
-      response = await getMiRanking();
+      datosHTML = await getProximos();
+      intro     = "⏭ Estos son los próximos partidos:";
+    } else if (/mis apuesta|como voy|aposte|apueste|mis result|cuantas gane|cuantas perd/.test(lower)) {
+      datosHTML = await getMisApuestas();
+      intro     = "🎯 Aquí van tus apuestas:";
+    } else if (/mi ranking|mi posicion|cuantos punto|mis punto|donde voy|puesto|tabla|clasificac/.test(lower)) {
+      datosHTML = await getMiRanking();
+      intro     = "🏆 Aquí está tu posición:";
     } else if (/quien va|quien lidera|quien tiene mas|lider|primero|ganando el torneo/.test(lower)) {
-      response = await getLider();
+      datosHTML = await getLider();
+      intro     = "👀 Te cuento quién va arriba:";
     } else if (/regl|como funciona|como jugar|como se juega|explicame/.test(lower)) {
-      response = getReglas();
+      datosHTML = getReglas();
+      intro     = "📖 Aquí te explico cómo funciona:";
     } else if (/punto|puntaje|cuanto vale|sistema|cuantos punt/.test(lower)) {
-      response = getSistemaPuntos();
-    } else if (/hola|buenas|hey|buenos|saludos/.test(lower)) {
-      response = await getSaludo();
-    } else {
-      response = await getIA(q); // solo para preguntas libres
+      datosHTML = getSistemaPuntos();
+      intro     = "⭐ Así funciona el sistema de puntos:";
+    } else if (/hola|buenas|hey|buenos|saludos|como estas|que mas|quiubo|ey|que tal|buenas tardes|buenas noches|buenos dias/.test(lower)) {
+      datosHTML = await getSaludo();
+      intro     = "";
     }
+
+    if (datosHTML !== null) {
+      hideTyping();
+      addMsg("bot", intro ? `${intro}<br><br>${datosHTML}` : datosHTML);
+    } else {
+      const libre = await getIA(q);
+      hideTyping();
+      addMsg("bot", libre);
+    }
+
   } catch (e) {
     console.error(e);
-    response = "Uy, algo falló. Intenta de nuevo 🙈";
+    hideTyping();
+    addMsg("bot", "Uy, algo falló. Intenta de nuevo 🙈");
   }
 
-  hideTyping();
-  addMsg("bot", response);
   isTyping = false;
   sendBtn.disabled = false;
   msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addMsgAndReset(html) {
+  hideTyping();
+  addMsg("bot", html);
+  isTyping = false;
+  sendBtn.disabled = false;
 }
 
   // ── Funciones de datos ────────────────────────────────────
@@ -642,29 +676,55 @@
     </div>`;
   }
 
+  async function getIntro(pregunta, contexto) {
+  const usuario = JSON.parse(localStorage.getItem("usuario") || "null");
+  const nombre  = usuario?.nombre || "crack";
+  try {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${typeof GROQ_API_KEY !== "undefined" ? GROQ_API_KEY : ""}`
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        max_tokens: 80,
+        messages: [
+          { role: "system", content: `Eres Terry, asistente colombiano y divertido del TDT Mundial. El usuario se llama ${nombre}. Escribe UNA sola oración corta y natural para introducir la información que viene, sin repetir los datos. Sin HTML, sin emojis de fútbol repetitivos. Tono parce y animado.` },
+          { role: "user", content: `El usuario dijo: "${pregunta}". Contexto: ${contexto}` }
+        ]
+      })
+    });
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || "Aquí va lo que encontré:";
+  } catch {
+    return "Aquí va lo que encontré:";
+  }
+}
+
   async function getIA(pregunta) {
   const usuario = JSON.parse(localStorage.getItem("usuario") || "null");
   const nombre = usuario?.nombre || "usuario";
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "anthropic-dangerous-direct-browser-access": "true"
+        "Authorization": `Bearer ${typeof GROQ_API_KEY !== "undefined" ? GROQ_API_KEY : ""}`
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "llama-3.3-70b-versatile",
         max_tokens: 300,
-        system: `Eres Terry, asistente de TDT Mundial, plataforma colombiana de apuestas de fútbol. 
-Eres divertido, parce, experto en fútbol. Respondes en español, máximo 3 oraciones cortas.
-El usuario se llama ${nombre}.`,
-        messages: [{ role: "user", content: pregunta }]
+        messages: [
+          { role: "system", content: `Eres Terry, asistente de TDT Mundial, plataforma colombiana de apuestas de fútbol. Eres divertido, parce, experto en fútbol. Respondes en español, máximo 3 oraciones cortas. El usuario se llama ${nombre}.` },
+          { role: "user", content: pregunta }
+        ]
       })
     });
 
     const data = await res.json();
-    return data.content?.[0]?.text || "No entendí bien, intenta con los botones de arriba 👆";
+    return data.choices?.[0]?.message?.content || "No entendí bien, intenta con los botones de arriba 👆";
   } catch (e) {
     return "No pude procesar eso ahora 😅 Prueba uno de los botones de arriba 👆";
   }
