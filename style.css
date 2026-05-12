@@ -4,14 +4,7 @@
 }
 
 body {
-  background-color: #111314;
-  background-image: repeating-linear-gradient(
-    -45deg,
-    transparent,
-    transparent 60px,
-    rgba(255,255,255,0.015) 60px,
-    rgba(255,255,255,0.015) 61px
-  );
+   background: radial-gradient(circle at center, #ff8800bd, #050217);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -59,7 +52,7 @@ body::before {
   letter-spacing: 2px;
   width: 320px;
   border-top: 4px solid #ff7a00;
-  box-shadow: 0 20px 40px rgba(255, 102, 0, 0.4);
+  box-shadow: 0 20px 40px rgb(0, 0, 0);
 }
 
 /* ---- CARD REGISTRO — oculto y animado ---- */
