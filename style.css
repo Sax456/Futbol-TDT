@@ -52,7 +52,7 @@ body::before {
   letter-spacing: 2px;
   width: 320px;
   border-top: 4px solid #ff7a00;
-  box-shadow: 0 20px 40px rgb(0, 0, 0);
+  box-shadow: 0 50px 50px rgb(0, 0, 0);
 }
 
 /* ---- CARD REGISTRO — oculto y animado ---- */
