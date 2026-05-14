@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="css/global.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/admin.css">
-  
 </head>
 <body>
 
@@ -26,74 +25,70 @@
 
 <div class="adminContainer">
 
-<div class="titulos">
-  <center>Panel Administrador</center>
+  <div class="titulos">
+    <center>Panel Administrador</center>
   </div>
 
   <!-- TABS DE NAVEGACIÓN -->
   <div class="tabsNav">
-    <button id="tab-partidos"   class="tabBtn activo" onclick="mostrarSeccion('partidos')">
-      📋 Partidos
-    </button>
-    <button id="tab-resultados" class="tabBtn" onclick="mostrarSeccion('resultados')">
-      ⚽ Resultados
-    </button>
-    <button id="tab-ranking"    class="tabBtn" onclick="mostrarSeccion('ranking')">
-      🏆 Ranking
-    </button>
+    <button id="tab-partidos"   class="tabBtn activo" onclick="mostrarSeccion('partidos')">📋 Partidos</button>
+    <button id="tab-grupos"     class="tabBtn"        onclick="mostrarSeccion('grupos')">🗂 Grupos</button>
+    <button id="tab-resultados" class="tabBtn"        onclick="mostrarSeccion('resultados')">⚽ Resultados</button>
+    <button id="tab-ranking"    class="tabBtn"        onclick="mostrarSeccion('ranking')">🏆 Ranking</button>
   </div>
 
   <!-- ==================== SECCIÓN PARTIDOS ==================== -->
-<div id="seccion-partidos" class="seccionPanel">
-
-  <div class="seccion">
-    <button id="btnMostrarForm" class="btn btn-primary" onclick="mostrarFormNuevo()">
-      ➕ Agregar partido nuevo
-    </button>
-
-    <div id="formNuevo" style="display:none" class="formNuevo">
-      <h3>Nuevo partido</h3>
-      <div class="formGrid">
-
-        <div class="grupoRow">
-          <select id="nuevoGrupo" class="inputAdmin">
-            <option value="">-- Selecciona grupo --</option>
-          </select>
-          <button class="btnCrearGrupo" onclick="mostrarFormGrupo()">➕ Nuevo grupo</button>
-        </div>
-
-        <div id="formCrearGrupo" style="display:none" class="formCrearGrupo">
-          <input id="nuevoNombreGrupo" class="inputAdmin" placeholder="Nombre del grupo (ej: Grupo A)" />
-          <div class="formBtns">
-            <button class="btn btn-primary" onclick="crearGrupo()">💾 Crear grupo</button>
-            <button class="btnBack" onclick="ocultarFormGrupo()">Cancelar</button>
+  <div id="seccion-partidos" class="seccionPanel">
+    <div class="seccion">
+      <button id="btnMostrarForm" class="btn btn-primary" onclick="mostrarFormNuevo()">
+        ➕ Agregar partido nuevo
+      </button>
+      <div id="formNuevo" style="display:none" class="formNuevo">
+        <h3>Nuevo partido</h3>
+        <div class="formGrid">
+          <div class="grupoRow">
+            <select id="nuevoGrupo" class="inputAdmin">
+              <option value="">-- Selecciona grupo --</option>
+            </select>
+            <button class="btnCrearGrupo" onclick="mostrarFormGrupo()">➕ Nuevo grupo</button>
           </div>
+          <div id="formCrearGrupo" style="display:none" class="formCrearGrupo">
+            <input id="nuevoNombreGrupo" class="inputAdmin" placeholder="Nombre del grupo (ej: Grupo A)" />
+            <div class="formBtns">
+              <button class="btn btn-primary" onclick="crearGrupo()">💾 Crear grupo</button>
+              <button class="btnBack" onclick="ocultarFormGrupo()">Cancelar</button>
+            </div>
+          </div>
+          <input id="nuevoE1"    class="inputAdmin" placeholder="Equipo 1" />
+          <input id="nuevoE2"    class="inputAdmin" placeholder="Equipo 2" />
+          <input id="nuevoFecha" class="inputAdmin" type="datetime-local" />
         </div>
-
-        <input id="nuevoE1"    class="inputAdmin" placeholder="Equipo 1" />
-        <input id="nuevoE2"    class="inputAdmin" placeholder="Equipo 2" />
-        <input id="nuevoFecha" class="inputAdmin" type="datetime-local" />
+        <div class="formBtns">
+          <button class="btn btn-primary" onclick="agregarPartido()">💾 Guardar partido</button>
+          <button class="btnBack" onclick="cancelarNuevo()">Cancelar</button>
+        </div>
       </div>
-      <div class="formBtns">
-        <button class="btn btn-primary" onclick="agregarPartido()">💾 Guardar partido</button>
-        <button class="btnBack" onclick="cancelarNuevo()">Cancelar</button>
-      </div>
+    </div>
+    <div class="seccion filtroBar">
+      <label>Filtrar por grupo:</label>
+      <select id="filtroGrupo" onchange="filtrarPartidos()" class="inputAdmin">
+        <option value="">Todos los grupos</option>
+      </select>
+    </div>
+    <div class="seccion">
+      <h2>📋 Partidos registrados</h2>
+      <div id="listaPartidos"></div>
     </div>
   </div>
 
-  <div class="seccion filtroBar">
-    <label>Filtrar por grupo:</label>
-    <select id="filtroGrupo" onchange="filtrarPartidos()" class="inputAdmin">
-      <option value="">Todos los grupos</option>
-    </select>
+  <!-- ==================== SECCIÓN GRUPOS ==================== -->
+  <div id="seccion-grupos" class="seccionPanel" style="display:none">
+    <div class="seccion">
+      <h2>🗂 Activar / Desactivar grupos</h2>
+      <p class="seccionDesc">Activa los grupos para que los usuarios puedan ver los partidos y hacer apuestas.</p>
+      <div id="listaGruposAdmin"></div>
+    </div>
   </div>
-
-  <div class="seccion">
-    <h2>📋 Partidos registrados</h2>
-    <div id="listaPartidos"></div>
-  </div>
-
-</div>
 
   <!-- ==================== SECCIÓN RESULTADOS ==================== -->
   <div id="seccion-resultados" class="seccionPanel" style="display:none">
