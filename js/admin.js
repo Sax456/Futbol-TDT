@@ -2,6 +2,28 @@
 // admin.js — Panel administrador TDT Mundial
 // ============================================================
 
+const _usuarioAdmin = (() => {
+  try {
+    const raw = localStorage.getItem("usuario");
+    if (!raw) throw new Error("no session");
+    const u = JSON.parse(raw);
+    if (u.rol !== "admin") throw new Error("not admin");
+    return u;
+  } catch {
+    alert("Acceso denegado");
+    window.location.replace("index.html");
+    return null;
+  }
+})();
+
+if (!_usuarioAdmin) throw new Error("stop");
+
+let partidosCache = [];
+let vistaActual = "partidos";
+
+// ============================================================
+// GRUPOS — selects
+// ============================================================
 async function cargarGrupos() {
   const { data: grupos } = await db
     .from("grupos")
@@ -13,13 +35,11 @@ async function cargarGrupos() {
   const selectNuevo  = document.getElementById("nuevoGrupo");
   const selectFiltro = document.getElementById("filtroGrupo");
 
-  // Limpiar y rellenar selector del formulario
   selectNuevo.innerHTML = "<option value=''>-- Selecciona grupo --</option>";
   grupos.forEach(g => {
     selectNuevo.innerHTML += `<option value="${g.id}">${g.nombre}</option>`;
   });
 
-  // Limpiar y rellenar selector del filtro
   selectFiltro.innerHTML = "<option value=''>Todos los grupos</option>";
   grupos.forEach(g => {
     selectFiltro.innerHTML += `<option value="${g.id}">${g.nombre}</option>`;
@@ -50,31 +70,9 @@ async function crearGrupo() {
 
   ocultarFormGrupo();
   await cargarGrupos();
-
-  // Seleccionar automáticamente el grupo recién creado
   document.getElementById("nuevoGrupo").value = data.id;
   alert(`✅ Grupo "${nombre}" creado`);
 }
-
-// Protección de ruta — verifica rol real desde localStorage
-const _usuarioAdmin = (() => {
-  try {
-    const raw = localStorage.getItem("usuario");
-    if (!raw) throw new Error("no session");
-    const u = JSON.parse(raw);
-    if (u.rol !== "admin") throw new Error("not admin");
-    return u;
-  } catch {
-    alert("Acceso denegado");
-    window.location.replace("index.html");
-    return null;
-  }
-})();
-
-if (!_usuarioAdmin) throw new Error("stop");
-
-let partidosCache = [];
-let vistaActual = "partidos";
 
 // ============================================================
 // NAVEGACIÓN
@@ -88,6 +86,73 @@ function mostrarSeccion(seccion) {
   if (seccion === "resultados") cargarPartidosResultados();
   if (seccion === "ranking")    cargarRanking();
   if (seccion === "partidos")   cargarPartidosAdmin();
+  if (seccion === "grupos")     cargarGruposAdmin();
+}
+
+// ============================================================
+// SECCIÓN: GRUPOS (activar/desactivar)
+// ============================================================
+async function cargarGruposAdmin() {
+  const contenedor = document.getElementById("listaGruposAdmin");
+  contenedor.innerHTML = "<p>Cargando grupos...</p>";
+
+  const { data: grupos, error } = await db
+    .from("grupos")
+    .select("*")
+    .order("id", { ascending: true });
+
+  if (error || !grupos) {
+    contenedor.innerHTML = "<p>Error cargando grupos</p>";
+    return;
+  }
+
+  let html = '<div class="gruposAdminGrid">';
+  for (const g of grupos) {
+    const activo = g.estado === "activo";
+    html += `
+      <div class="grupoAdminCard ${activo ? "grupoActivo" : "grupoBloqueado"}">
+        <div class="grupoAdminNombre">${g.nombre}</div>
+        <div class="grupoAdminEstado">
+          ${activo
+            ? '<span class="estadoTag activo">🟢 Activo</span>'
+            : '<span class="estadoTag bloqueado">🔴 Bloqueado</span>'}
+        </div>
+        <button class="${activo ? "btnBloquearGrupo" : "btnActivarGrupo"}"
+          onclick="toggleGrupo(${g.id}, '${g.estado}')">
+          ${activo ? "🔒 Bloquear" : "🔓 Activar"}
+        </button>
+      </div>
+    `;
+  }
+  html += '</div>';
+
+  // Botones para activar/bloquear todos
+  html = `
+    <div class="gruposBulkBtns">
+      <button class="btnActivarTodos" onclick="toggleTodosGrupos('activo')">🔓 Activar todos</button>
+      <button class="btnBloquearTodos" onclick="toggleTodosGrupos(null)">🔒 Bloquear todos</button>
+    </div>
+  ` + html;
+
+  contenedor.innerHTML = html;
+}
+
+async function toggleGrupo(grupoId, estadoActual) {
+  const nuevoEstado = estadoActual === "activo" ? null : "activo";
+  const { error } = await db.from("grupos").update({ estado: nuevoEstado }).eq("id", grupoId);
+  if (error) { alert("Error: " + error.message); return; }
+  cargarGruposAdmin();
+}
+
+async function toggleTodosGrupos(estado) {
+  const confirmMsg = estado === "activo"
+    ? "¿Activar todos los grupos? Los usuarios podrán ver y apostar en todos."
+    : "¿Bloquear todos los grupos? Los usuarios no podrán entrar a ninguno.";
+  if (!confirm(confirmMsg)) return;
+
+  const { error } = await db.from("grupos").update({ estado }).gte("id", 1);
+  if (error) { alert("Error: " + error.message); return; }
+  cargarGruposAdmin();
 }
 
 // ============================================================
@@ -161,30 +226,23 @@ function renderizarPartidos(partidos) {
   contenedor.innerHTML = html;
 }
 
-function filtrarPartidos() {
-  renderizarPartidos(partidosCache);
-}
+function filtrarPartidos() { renderizarPartidos(partidosCache); }
 
 function toDatetimeLocal(isoString) {
   const d = new Date(isoString);
-  d.setMinutes(d.getMinutes() - 300); // UTC → Colombia (UTC-5)
+  d.setMinutes(d.getMinutes() - 300);
   return d.toISOString().slice(0, 16);
 }
 
 async function guardarPartido(id) {
-  const equipo1 = document.getElementById(`e1-${id}`).value.trim();
-  const equipo2 = document.getElementById(`e2-${id}`).value.trim();
+  const equipo1  = document.getElementById(`e1-${id}`).value.trim();
+  const equipo2  = document.getElementById(`e2-${id}`).value.trim();
   const fechaRaw = document.getElementById(`f-${id}`).value;
 
   if (!equipo1 || !equipo2) { alert("Completa los nombres de los equipos"); return; }
 
   const fecha = fechaRaw ? fechaRaw + ":00-05:00" : null;
-
-  const { error } = await db
-    .from("partidos")
-    .update({ equipo1, equipo2, fecha })
-    .eq("id", id);
-
+  const { error } = await db.from("partidos").update({ equipo1, equipo2, fecha }).eq("id", id);
   if (error) { alert("Error: " + error.message); return; }
   alert("✅ Partido guardado");
   cargarPartidosAdmin();
@@ -193,54 +251,50 @@ async function guardarPartido(id) {
 async function eliminarPartido(id) {
   if (!confirm("¿Eliminar este partido y todas sus apuestas?")) return;
 
-  // 1. Buscar apuestas del partido
-  const { data: apuestas } = await db
-    .from("apuestas")
-    .select("id")
-    .eq("partido_id", id);
-
-  // 2. Borrar detalles de apuestas
+  const { data: apuestas } = await db.from("apuestas").select("id").eq("partido_id", id);
   if (apuestas && apuestas.length > 0) {
-    const apuestaIds = apuestas.map(a => a.id);
-    const { error: e1 } = await db.from("apuestas_detalle").delete().in("apuesta_id", apuestaIds);
-    if (e1) { alert("Error al eliminar detalles: " + e1.message); return; }
-
-    const { error: e2 } = await db.from("apuestas").delete().in("id", apuestaIds);
-    if (e2) { alert("Error al eliminar apuestas: " + e2.message); return; }
+    const ids = apuestas.map(a => a.id);
+    await db.from("apuestas_detalle").delete().in("apuesta_id", ids);
+    await db.from("apuestas").delete().in("id", ids);
   }
-
-  // 3. Borrar resultado (DEBE ir antes de borrar el partido)
-  const { error: e3 } = await db.from("resultados").delete().eq("partido_id", id);
-  if (e3) { alert("Error al eliminar resultado: " + e3.message); return; }
-
-  // 4. Ahora sí borrar el partido
-  const { error: e4 } = await db.from("partidos").delete().eq("id", id);
-  if (e4) { alert("Error al eliminar partido: " + e4.message); return; }
+  await db.from("resultados").delete().eq("partido_id", id);
+  await db.from("partidos").delete().eq("id", id);
 
   alert("✅ Partido eliminado");
   cargarPartidosAdmin();
 }
 
 async function agregarPartido() {
-  const grupoId = document.getElementById("nuevoGrupo").value;
-  const equipo1 = document.getElementById("nuevoE1").value.trim();
-  const equipo2 = document.getElementById("nuevoE2").value.trim();
+  const grupoId  = document.getElementById("nuevoGrupo").value;
+  const equipo1  = document.getElementById("nuevoE1").value.trim();
+  const equipo2  = document.getElementById("nuevoE2").value.trim();
   const fechaRaw = document.getElementById("nuevoFecha").value;
 
-  if (!grupoId) { alert("Selecciona un grupo"); return; }
+  if (!grupoId)             { alert("Selecciona un grupo"); return; }
   if (!equipo1 || !equipo2) { alert("Ingresa los nombres de los equipos"); return; }
 
   const fecha = fechaRaw ? fechaRaw + ":00-05:00" : null;
-
-  const { error } = await db
-    .from("partidos")
-    .insert([{ equipo1, equipo2, grupo_id: parseInt(grupoId), fecha }]);
+  const { error } = await db.from("partidos").insert([{
+    equipo1, equipo2, grupo_id: parseInt(grupoId), fecha
+  }]);
 
   if (error) { alert("Error: " + error.message); return; }
-
   cancelarNuevo();
   alert("✅ Partido creado");
   cargarPartidosAdmin();
+}
+
+function mostrarFormNuevo() {
+  document.getElementById("formNuevo").style.display = "block";
+  document.getElementById("btnMostrarForm").style.display = "none";
+}
+
+function cancelarNuevo() {
+  document.getElementById("formNuevo").style.display = "none";
+  document.getElementById("btnMostrarForm").style.display = "block";
+  ["nuevoGrupo","nuevoE1","nuevoE2","nuevoFecha"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
 }
 
 // ============================================================
@@ -251,23 +305,31 @@ async function cargarPartidosResultados() {
   contenedor.innerHTML = "<p>Cargando...</p>";
 
   const ahora = new Date().toISOString();
-
   const { data: partidos, error } = await db
     .from("partidos")
     .select("*, grupos(nombre)")
     .lte("fecha", ahora)
     .order("fecha", { ascending: false });
 
-  if (error) { contenedor.innerHTML = `<p style="color:red">Error: ${error.message}</p>`; return; }
+  if (error) {
+    contenedor.innerHTML = `<p style="color:red">Error: ${error.message}</p>`;
+    return;
+  }
+
+  if (!partidos || partidos.length === 0) {
+    contenedor.innerHTML = `
+      <div style="text-align:center; padding:40px; color:#64748b;">
+        <p style="font-size:40px">⏳</p>
+        <p>Los partidos del Mundial inician el <strong style="color:#ff7a00">11 de junio de 2026</strong></p>
+        <p>Aquí aparecerán los partidos para ingresar resultados.</p>
+      </div>
+    `;
+    return;
+  }
 
   const { data: resultados } = await db.from("resultados").select("*");
   const resMap = {};
   (resultados || []).forEach(r => { resMap[r.partido_id] = r; });
-
-  if (!partidos || partidos.length === 0) {
-    contenedor.innerHTML = "<p>No hay partidos iniciados aún.</p>";
-    return;
-  }
 
   let html = "";
   for (const p of partidos) {
@@ -326,23 +388,19 @@ async function guardarResultado(partidoId, equipo1, equipo2) {
 
   if (goles1 === "" || goles2 === "") { alert("Ingresa los goles de ambos equipos"); return; }
 
-  const { error } = await db
-    .from("resultados")
-    .upsert({
-      partido_id: partidoId,
-      goles1    : parseInt(goles1),
-      goles2    : parseInt(goles2),
-      amarillas : amarillas !== "" ? parseInt(amarillas) : null,
-      rojas     : rojas     !== "" ? parseInt(rojas)     : null,
-      corners   : corners   !== "" ? parseInt(corners)   : null,
-      ingresado_en: new Date().toISOString()
-    }, { onConflict: "partido_id" });
+  const { error } = await db.from("resultados").upsert({
+    partido_id  : partidoId,
+    goles1      : parseInt(goles1),
+    goles2      : parseInt(goles2),
+    amarillas   : amarillas !== "" ? parseInt(amarillas) : null,
+    rojas       : rojas     !== "" ? parseInt(rojas)     : null,
+    corners     : corners   !== "" ? parseInt(corners)   : null,
+    ingresado_en: new Date().toISOString()
+  }, { onConflict: "partido_id" });
 
   if (error) { alert("Error al guardar: " + error.message); return; }
 
-  // Recalcular puntos (también corrige apuestas ya procesadas)
   await calcularPuntosPartido(partidoId, { equipo1, equipo2, goles1, goles2, amarillas, rojas, corners });
-
   alert("✅ Resultado guardado y puntos actualizados");
   cargarPartidosResultados();
 }
@@ -354,14 +412,16 @@ async function cargarRanking() {
   const contenedor = document.getElementById("tablaRanking");
   contenedor.innerHTML = "<p>Calculando...</p>";
 
-  const { data: apuestas, error } = await db
-    .from("apuestas")
-    .select("usuario_id, puntos_ganados")
-    .eq("estado", "ganada");
+  const { data: apuestas, error: errApuestas } = await db
+    .from("apuestas").select("usuario_id, puntos_ganados").eq("estado", "ganada");
 
-  const { data: usuarios } = await db.from("usuarios").select("user, nombre");
+  const { data: usuarios, error: errUsuarios } = await db
+    .from("usuarios").select("user, nombre, rol");
 
-  if (error || !usuarios) { contenedor.innerHTML = "<p>Error cargando ranking</p>"; return; }
+  if (errApuestas || errUsuarios || !usuarios) {
+    contenedor.innerHTML = "<p>Error cargando ranking</p>";
+    return;
+  }
 
   const puntosMap = {};
   (apuestas || []).forEach(a => {
@@ -373,13 +433,20 @@ async function cargarRanking() {
     .map(u => ({ nombre: u.nombre, user: u.user, puntos: puntosMap[u.user] || 0 }))
     .sort((a, b) => b.puntos - a.puntos);
 
-  const medallas = ["🥇", "🥈", "🥉"];
+  if (ranking.length === 0) {
+    contenedor.innerHTML = `
+      <div style="text-align:center; padding:40px; color:#64748b;">
+        <p style="font-size:40px">🏆</p>
+        <p>Aún no hay usuarios registrados o no hay puntos.</p>
+      </div>
+    `;
+    return;
+  }
 
+  const medallas = ["🥇", "🥈", "🥉"];
   let html = `
     <table class="rankingTable">
-      <thead>
-        <tr><th>#</th><th>Usuario</th><th>Puntos</th></tr>
-      </thead>
+      <thead><tr><th>#</th><th>Usuario</th><th>Puntos</th></tr></thead>
       <tbody>
   `;
   ranking.forEach((r, i) => {
@@ -395,23 +462,8 @@ async function cargarRanking() {
   contenedor.innerHTML = html;
 }
 
-// Iniciar en la sección de partidos
-cargarPartidosAdmin();
-
-function mostrarFormNuevo() {
-  document.getElementById("formNuevo").style.display = "block";
-  document.getElementById("btnMostrarForm").style.display = "none";
-}
-
-function cancelarNuevo() {
-  document.getElementById("formNuevo").style.display = "none";
-  document.getElementById("btnMostrarForm").style.display = "block";
-  document.getElementById("nuevoGrupo").value = "";
-  document.getElementById("nuevoE1").value = "";
-  document.getElementById("nuevoE2").value = "";
-  document.getElementById("nuevoFecha").value = "";
-}
-
-// Al final, donde ya tienes cargarPartidosAdmin()
-cargarPartidosAdmin();
-cargarGrupos(); // ← agregar esta línea
+// ============================================================
+// INICIAR
+// ============================================================
+mostrarSeccion("partidos");
+cargarGrupos();
