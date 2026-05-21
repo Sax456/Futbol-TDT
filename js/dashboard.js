@@ -29,7 +29,7 @@ async function cargarGrupos() {
 
   for (const g of grupos) {
 
-    const abierto = g.id == 13;
+    const abierto = g.estado === "activo";
     const numPartidos = conteoPartidos[g.id] || 0;
 
     contenedor.innerHTML += `
