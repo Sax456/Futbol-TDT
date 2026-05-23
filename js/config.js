@@ -1,1 +1,1 @@
-
+const GROQ_API_KEY = "TU_GROQ_API_KEY_AQUI";
