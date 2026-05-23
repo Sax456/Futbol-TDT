@@ -2,7 +2,7 @@
 // terry.js — Chatbot TDT Mundial
 // ============================================================
 
-const GROQ_API_KEY = "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"; // 👈 Pon tu key de console.groq.com
+const GROQ_API_KEY = "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"; // 👈 Pon tu key de console.groq.com
 
 (function () {
   // ── Inyectar estilos ──────────────────────────────────────
